@@ -179,6 +179,30 @@ void main() {
         );
     }
 
+    // Set Vertex and index Buffer
+    setVertexIndexBuffer(vBuffer, indexBuffer){
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            vBuffer
+        );
+        this._parentContext.bindBuffer(
+            this._parentContext.ELEMENT_ARRAY_BUFFER,
+            indexBuffer
+        );
+
+        this._parentContext.vertexAttribPointer(
+            this._shaderInputLayout.attribLocations.vertexPosition,
+            3,
+            this._parentContext.FLOAT,
+            false,
+            0,
+            0
+        );
+        this._parentContext.enableVertexAttribArray(
+            this._shaderInputLayout.attribLocations.vertexPosition
+        );
+    }
+
 
 }
 
@@ -419,25 +443,7 @@ class JSWebGlSquare {
     }
 
     draw(WebGlShaderProgram) {
-        // Bind vertecies
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._vertexBuffer
-        );
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            this._indexBuffer
-        )
-        this._parentContext.vertexAttribPointer(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.vertexPosition,
-            3,
-            this._parentContext.FLOAT,
-            false,
-            0,
-            0
-        );
-        this._parentContext.enableVertexAttribArray(WebGlShaderProgram._shaderInputLayout.attribLocations.vertexPosition);
-
+        WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer,this._indexBuffer);
 
         // Bind Colour
         this._parentContext.bindBuffer(
@@ -453,11 +459,7 @@ class JSWebGlSquare {
         );
         this._parentContext.enableVertexAttribArray(WebGlShaderProgram._shaderInputLayout.attribLocations.colour)
 
-        this._parentContext.uniformMatrix4fv(
-            WebGlShaderProgram._shaderInputLayout.uniformLocations.worldMatrix,
-            false,
-            this._WorldMatrix
-        );
+        WebGlShaderProgram.setWorldMatrix(this._WorldMatrix);
 
         this._parentContext.drawElements(
             this._parentContext.TRIANGLES,
@@ -470,7 +472,7 @@ class JSWebGlSquare {
 let testCanvas = document.getElementById("Canvas");
 let MyWebGlContext = new WebGlContext(testCanvas);
 
-let scale = 2;
+let scale = 1.5;
 MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
