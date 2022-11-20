@@ -370,7 +370,7 @@ class JSWebGlSquare {
 // Testing
 let testCanvas = document.getElementById("Canvas");
 let MyWebGlContext = new WebGlContext(testCanvas);
-MyWebGlContext.setResolution(720,1920);
+MyWebGlContext.setResolution(screen.width,screen.height);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
