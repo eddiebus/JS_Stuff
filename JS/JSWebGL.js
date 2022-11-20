@@ -23,6 +23,7 @@ class WebGlContext {
         this._canvas = HTMLCanvas;
 
 
+
         if (this._canvasContext === null) {
             console.log("WebGL error: Failed to get Canvas Context");
             return;
@@ -32,13 +33,30 @@ class WebGlContext {
 
             console.log("WebGl Context Init Success");
         }
+
+        this._canFullScreen = true;
+        this._canvas.addEventListener("click", (event) =>{
+            if (this._canFullScreen) {
+                event.target.requestFullscreen();
+            }
+        })
     }
 
+    setResolution(width,height) {
+        this._canvas.width = width;
+        this._canvas.height = height;
+
+        this._canvasContext.viewport(0,0,width,height);
+    }
+    setCanFullScreen(bool){
+        this._canFullScreen = bool
+    }
     // Clear canvas to solid color
     clear(newColour = new WebGlVector4(0,0,0,1)) {
         this._canvasContext.clearColor(newColour.x, newColour.y, newColour.z, newColour.w);
         this._canvasContext.clearDepth(1.0);
         this._canvasContext.enable(this._canvasContext.DEPTH_TEST);
+        this._canvasContext.sampleCoverage(3,false);
         this._canvasContext.depthFunc(this._canvasContext.LESS);
 
         // Clear canvas
@@ -70,9 +88,13 @@ class JSWebGLShaderProgram {
         this._shaderProgram = this._parentContext.createProgram();
         this.vShaderCode = `
            attribute vec3 coordinates; 
+           
+           uniform mat4 WorldMatrix;
+           uniform mat4 ViewMatrix;
+           uniform mat4 uProjectionMatrix;
         
            void main(void) { 
-              gl_Position = vec4(coordinates, 1.0); 
+              gl_Position =   WorldMatrix * vec4(coordinates, 1.0); 
            }
         `
 
@@ -219,6 +241,16 @@ class JSWebGlCamera {
 class JSWebGlTriangle {
     constructor(WebGlShader) {
         this._parentContext = WebGlShader._canvasContext;
+
+        this._WorldMatrix = mat4.create();
+        mat4.translate(
+            this._WorldMatrix,
+            this._WorldMatrix,
+            [1,0.0,0.0]
+        );
+
+
+
         this._vertexBuffer = this._parentContext.createBuffer();
         this._indexBuffer = this._parentContext.createBuffer();
 
@@ -264,7 +296,6 @@ class JSWebGlTriangle {
             null
         );
 
-
     }
 
     draw(WebGlShaderProgram) {
@@ -288,6 +319,13 @@ class JSWebGlTriangle {
         );
 
         this._parentContext.enableVertexAttribArray(WebGlShaderProgram._shaderInputLayout.attribLocations.vertexPosition);
+
+
+        this._parentContext.uniformMatrix4fv(
+            WebGlShaderProgram._shaderInputLayout.uniformLocations.worldMatrix,
+            false,
+            this._WorldMatrix
+        );
 
         this._parentContext.drawElements(
             this._parentContext.TRIANGLES,
@@ -331,29 +369,20 @@ class JSWebGlSquare {
 
 // Testing
 let testCanvas = document.getElementById("Canvas");
-testCanvas.addEventListener("click", (event) => {
-    console.log(`Clicked = ${event}`);
-    event.target.requestFullscreen();
-})
 let MyWebGlContext = new WebGlContext(testCanvas);
-
+MyWebGlContext.setResolution(720,1920);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
 let myTri = new JSWebGlTriangle(MyWebGlContext);
 
-
 function loop() {
-    console.log("!!!");
     MyWebGlContext.clear(new WebGlVector4(0,0.5,0,1));
     myShaderProgram.use();
     myTri.draw(myShaderProgram);
-
-
     window.requestAnimationFrame(() => {
         loop();
     })
-
 }
 
 
