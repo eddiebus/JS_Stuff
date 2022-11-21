@@ -1,6 +1,5 @@
 console.log("Hello World")
 
-
 class JSGame_Key {
     constructor(KeyString, KeyDown, KeyPress, KeyUp) {
         this.value = KeyString;
@@ -65,9 +64,6 @@ class JSGame_InputSystem {
     }
 
     _Tick(deltaTime) {
-        if (this._Keys.length > 0) {
-            console.log(this._Keys[0]);
-        }
 
         for (let i = 0; i < this._Keys.length; i++)
         {

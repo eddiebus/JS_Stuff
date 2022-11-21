@@ -1,3 +1,8 @@
+
+function DegToRadians(valueDeg){
+    return valueDeg * Math.PI/180.0;
+}
+
 class WebGlVector3 {
     constructor(x = 0.0, y = 0.0, z = 0.0) {
         this.x = x;
@@ -21,9 +26,64 @@ class TransForm {
         this.position = new WebGlVector3();
         this.rotation = new WebGlVector3();
     }
+
+    GetTransformMatrix() {
+        let rotationDeg = new WebGlVector3(
+            DegToRadians(this.rotation.x),
+            DegToRadians(this.rotation.y),
+            DegToRadians(-this.rotation.z),
+        )
+        let translateMatrix = mat4.create();
+        mat4.translate(
+            translateMatrix,
+            translateMatrix,
+            [this.position.x,this.position.y,this.position.z]
+        );
+
+        let xRotMatrix = mat4.create();
+
+        mat4.fromXRotation(
+            xRotMatrix,
+            rotationDeg.x
+        );
+        let yRotMatrix = mat4.create();
+        mat4.fromYRotation(
+            yRotMatrix,
+            rotationDeg.y
+        );
+        let zRotMatrix = mat4.create();
+        mat4.fromZRotation(
+            zRotMatrix,
+            rotationDeg.z
+        );
+
+        let rotationMatrix = mat4.create();
+
+        mat4.multiply(
+            rotationMatrix,
+            xRotMatrix,
+            yRotMatrix
+        );
+
+        mat4.multiply(
+            rotationMatrix,
+            rotationMatrix,
+            zRotMatrix
+        );
+
+        let returnMatrix = mat4.create();
+
+        mat4.multiply(
+            returnMatrix,
+            rotationMatrix,
+            translateMatrix
+        );
+        return returnMatrix;
+    }
 }
 
 
+// WebGl Context is Linked to HTML Canas
 class WebGlContext {
     constructor(HTMLCanvas) {
         this._canvasContext = HTMLCanvas.getContext("webgl2", {
@@ -90,11 +150,9 @@ class WebGlContext {
         this._canvasContext.compileShader(newShader);
         return newShader;
     }
-
-
 }
 
-
+//  Default shader program. Basic 2D graphics
 class JSWebGLShaderProgram {
     constructor(WebGlContext) {
         this._parentContext = WebGlContext._canvasContext;
@@ -154,7 +212,6 @@ void main() {
         this._parentContext.useProgram(this._shaderProgram);
     }
 
-
     setWorldMatrix(newMatrix) {
         this._parentContext.uniformMatrix4fv(
             this._shaderInputLayout.uniformLocations.worldMatrix,
@@ -203,11 +260,12 @@ void main() {
         );
     }
 
-
 }
 
 class JSWebGlCamera {
     constructor(WebGlContext) {
+        this.transform = new TransForm();
+
         this._parentContext = WebGlContext._canvasContext;
         this._parentCanvas = this._parentContext.canvas;
 
@@ -238,22 +296,18 @@ class JSWebGlCamera {
         );
 
 
-        this._viewMatrix = mat4.create();
+        this._viewMatrix = this.transform.GetTransformMatrix();
 
-        mat4.translate(
-            this._viewMatrix,
-            this._viewMatrix,
-            [this.pos.x, this.pos.y, this.pos.z]
-        );
 
     }
 
     setPosition(webGlVector) {
-        this.pos = webGlVector;
+        this.transform.position = webGlVector;
         this._updateMatrix();
     }
 
     setToShader(WebGlShaderProgram) {
+        this._updateMatrix();
         WebGlShaderProgram.setViewMatrix(this._viewMatrix);
         WebGlShaderProgram.setProjectionMatrix(this._projectionMatrix);
     }
@@ -339,7 +393,6 @@ class JSWebGlTriangle {
         );
 
         this._parentContext.enableVertexAttribArray(WebGlShaderProgram._shaderInputLayout.attribLocations.vertexPosition);
-
 
         this._parentContext.uniformMatrix4fv(
             WebGlShaderProgram._shaderInputLayout.uniformLocations.worldMatrix,
@@ -479,10 +532,17 @@ let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
 let mySquare = new JSWebGlSquare(MyWebGlContext);
 
+
+let rotationVector = new WebGlVector3(0,0,0);
+
 function loop() {
+
+    rotationVector.z += Time.deltaTime * 0.25;
+    console.log(rotationVector);
+
     MyWebGlContext.clear(new WebGlVector4(0.5, 0.8, 1, 1));
     myShaderProgram.use();
-    myCamera.setPosition(new WebGlVector3(0,-5,-5));
+    myCamera.transform.rotation = rotationVector;
     myCamera.setToShader(myShaderProgram);
     mySquare.draw(myShaderProgram);
     window.requestAnimationFrame(() => {
