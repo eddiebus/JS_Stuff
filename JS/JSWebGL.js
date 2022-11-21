@@ -525,7 +525,7 @@ class JSWebGlSquare {
 let testCanvas = document.getElementById("Canvas");
 let MyWebGlContext = new WebGlContext(testCanvas);
 
-let scale = 1.5;
+let scale = 2;
 MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
@@ -536,7 +536,6 @@ let mySquare = new JSWebGlSquare(MyWebGlContext);
 let rotationVector = new WebGlVector3(0,0,0);
 
 function loop() {
-
     rotationVector.z += Time.deltaTime * 0.25;
     console.log(rotationVector);
 
