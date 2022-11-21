@@ -287,6 +287,7 @@ void main() {
 class JSWebGlCamera {
     constructor(WebGlContext) {
         this.transform = new TransForm();
+        this.Size = [10,10];
 
         this._parentContext = WebGlContext._canvasContext;
         this._parentCanvas = this._parentContext.canvas;
@@ -304,8 +305,8 @@ class JSWebGlCamera {
 
     // Update matrix's when values change
     _updateMatrix() {
-        let cWidth = 10;
-        let cHeight = 10;
+        let cWidth = this.Size[0];
+        let cHeight = this.Size[1];
 
         mat4.ortho(
             this._projectionMatrix,
@@ -467,7 +468,7 @@ function loop() {
     rotationVector.z += Time.deltaTime * 0.3;
 
 
-    let speed = 0.01
+    let speed = 1
     if (JSGameInput.GetKey("w").Press){
         mySquare.transform.position[1] += Time.deltaTime * speed;
         mySquare2.transform.position[1] += Time.deltaTime * speed;
@@ -489,8 +490,10 @@ function loop() {
     myShaderProgram.use();
     mySquare.transform.rotation[2] += Time.deltaTime * 0.3;
     mySquare2.transform.rotation[2] += Time.deltaTime * 0.3;
-    mySquare2.transform.scale = [2,2,2,1];
+    mySquare2.transform.scale = [300,300,300,1];
+    mySquare.transform.scale = [200,200,200,1];
 
+    myCamera.Size = [screen.width,screen.height]
     myCamera.setToShader(myShaderProgram);
     mySquare.draw(myShaderProgram);
     mySquare2.draw(myShaderProgram);
