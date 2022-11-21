@@ -1,5 +1,3 @@
-console.log("Hello World")
-
 class JSGame_Key {
     constructor(KeyString, KeyDown, KeyPress, KeyUp) {
         this.value = KeyString;
@@ -11,7 +9,6 @@ class JSGame_Key {
 
 class JSGame_InputSystem {
     constructor() {
-
         this._Keys = []
 
         window.addEventListener("keydown", (event) => {
@@ -22,8 +19,6 @@ class JSGame_InputSystem {
             this._AddKeyUpEvent(event);
         })
 
-
-
         window.requestAnimationFrame(() => {
             this._Tick()
         });
@@ -32,7 +27,6 @@ class JSGame_InputSystem {
     GetKey(keyName){
         let index = this._GetIndex(keyName);
         if (index >= 0) {
-            console.log(`Key found at ${index}`);
             return this._Keys[index];
         }
         else
@@ -103,7 +97,6 @@ class JSGame_InputSystem {
         console.log(this._Keys);
     }
 }
-
 
 const JSGameInput = new JSGame_InputSystem();
 

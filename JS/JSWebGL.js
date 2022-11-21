@@ -23,45 +23,50 @@ class WebGlVector4 {
 
 class TransForm {
     constructor() {
-        this.position = new WebGlVector3();
-        this.rotation = new WebGlVector3();
-        this.scale = new WebGlVector3(1,1,1);
+        this.position = vec4.create();
+        this.rotation = vec4.create();
+        this.scale = vec4.create()
+        for (let i = 0; i < 4;i++){
+            this.scale[i] = 1;
+        }
     }
     GetTransformMatrix() {
-        let rotationDeg = new WebGlVector3(
-            DegToRadians(this.rotation.x),
-            DegToRadians(this.rotation.y),
-            DegToRadians(-this.rotation.z),
-        )
+
+
+        let rotationDeg = vec4.create();
+        rotationDeg[0] = DegToRadians(this.rotation[0]);
+        rotationDeg[1] = DegToRadians(this.rotation[1]);
+        rotationDeg[2] = DegToRadians(this.rotation[2]);
 
         let scaleMatrix = mat4.create();
         mat4.fromScaling(
             scaleMatrix,
-            [this.scale.x,this.scale.y,this.scale.z]
+            [this.scale[0],this.scale[1],this.scale[3]]
         );
 
         let translateMatrix = mat4.create();
         mat4.translate(
             translateMatrix,
             translateMatrix,
-            [this.position.x,this.position.y,this.position.z]
+            [this.position[0],this.position[1],this.position[2]]
         );
 
         let xRotMatrix = mat4.create();
 
         mat4.fromXRotation(
             xRotMatrix,
-            rotationDeg.x
+            rotationDeg[0]
         );
+
         let yRotMatrix = mat4.create();
         mat4.fromYRotation(
             yRotMatrix,
-            rotationDeg.y
+            rotationDeg[1]
         );
         let zRotMatrix = mat4.create();
         mat4.fromZRotation(
             zRotMatrix,
-            rotationDeg.z
+            rotationDeg[2]
         );
 
         let rotationMatrix = mat4.create();
@@ -446,7 +451,7 @@ class JSWebGlSquare {
 let testCanvas = document.getElementById("Canvas");
 let MyWebGlContext = new WebGlContext(testCanvas);
 
-let scale = 1;
+let scale = 1.5;
 MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
@@ -460,22 +465,31 @@ let translateVector = new WebGlVector3();
 
 function loop() {
     rotationVector.z += Time.deltaTime * 0.3;
-    console.log(rotationVector);
 
 
-    JSGameInput.DebugLogKeys();
-
+    let speed = 0.01
     if (JSGameInput.GetKey("w").Press){
-        console.log("OOOK!")
-        translateVector.y += Time.deltaTime *0.1;
+        mySquare.transform.position[1] += Time.deltaTime * speed;
+        mySquare2.transform.position[1] += Time.deltaTime * speed;
+    }
+    else if (JSGameInput.GetKey("s").Press){
+        mySquare.transform.position[1] -= Time.deltaTime * speed;
+        mySquare2.transform.position[1] -= Time.deltaTime * speed;
+    }
+
+    if (JSGameInput.GetKey("a").Press){
+        mySquare.transform.position[0] -= Time.deltaTime * speed;
+        mySquare2.transform.position[0] -= Time.deltaTime * speed;
+    }
+    else if (JSGameInput.GetKey("d").Press){
+        mySquare.transform.position[0] += Time.deltaTime * speed;
+        mySquare2.transform.position[0] += Time.deltaTime * speed;
     }
     MyWebGlContext.clear(new WebGlVector4(0.5, 0.8, 1, 1));
     myShaderProgram.use();
-    mySquare.transform.rotation = rotationVector;
-    mySquare2.transform.rotation = rotationVector;
-    mySquare2.transform.position = new WebGlVector3(translateVector.x,translateVector.y,-10)
-    mySquare.transform.position = new WebGlVector3(translateVector.x,translateVector.y,0)
-    mySquare2.transform.scale = new WebGlVector3(1.5,1.5,1.5);
+    mySquare.transform.rotation[2] += Time.deltaTime * 0.3;
+    mySquare2.transform.rotation[2] += Time.deltaTime * 0.3;
+    mySquare2.transform.scale = [2,2,2,1];
 
     myCamera.setToShader(myShaderProgram);
     mySquare.draw(myShaderProgram);
