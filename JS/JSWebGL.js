@@ -25,14 +25,21 @@ class TransForm {
     constructor() {
         this.position = new WebGlVector3();
         this.rotation = new WebGlVector3();
+        this.scale = new WebGlVector3(1,1,1);
     }
-
     GetTransformMatrix() {
         let rotationDeg = new WebGlVector3(
             DegToRadians(this.rotation.x),
             DegToRadians(this.rotation.y),
             DegToRadians(-this.rotation.z),
         )
+
+        let scaleMatrix = mat4.create();
+        mat4.fromScaling(
+            scaleMatrix,
+            [this.scale.x,this.scale.y,this.scale.z]
+        );
+
         let translateMatrix = mat4.create();
         mat4.translate(
             translateMatrix,
@@ -75,13 +82,24 @@ class TransForm {
 
         mat4.multiply(
             returnMatrix,
-            rotationMatrix,
+            returnMatrix,
             translateMatrix
+        );
+
+        mat4.multiply(
+            returnMatrix,
+            returnMatrix,
+            scaleMatrix
+        );
+
+        mat4.multiply(
+            returnMatrix,
+            returnMatrix,
+            rotationMatrix
         );
         return returnMatrix;
     }
 }
-
 
 // WebGl Context is Linked to HTML Canas
 class WebGlContext {
@@ -259,7 +277,6 @@ void main() {
             this._shaderInputLayout.attribLocations.vertexPosition
         );
     }
-
 }
 
 class JSWebGlCamera {
@@ -280,7 +297,7 @@ class JSWebGlCamera {
         this._updateMatrix();
     }
 
-    // Update matrixs when values change
+    // Update matrix's when values change
     _updateMatrix() {
         let cWidth = 10;
         let cHeight = 10;
@@ -294,11 +311,7 @@ class JSWebGlCamera {
             this.zNear,
             this.zFar
         );
-
-
         this._viewMatrix = this.transform.GetTransformMatrix();
-
-
     }
 
     setPosition(webGlVector) {
@@ -313,109 +326,22 @@ class JSWebGlCamera {
     }
 }
 
-class JSWebGlTriangle {
-    constructor(WebGlShader) {
-        this._parentContext = WebGlShader._canvasContext;
-
-        this._WorldMatrix = mat4.create();
-        mat4.translate(
-            this._WorldMatrix,
-            this._WorldMatrix,
-            [1, 0.0, 0.0]
-        );
-
-
-        this._vertexBuffer = this._parentContext.createBuffer();
-        this._indexBuffer = this._parentContext.createBuffer();
-
-        let vertices = [
-            -0.5, 0.5, 0.0,
-            -0.5, -0.5, 0.0,
-            0.5, -0.5, 0.0,
-        ];
-
-        let indices = [0, 1, 2];
-
-        this._vCount = vertices.length;
-        this._indexCount = indices.length;
-
-        // write points to buffer
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._vertexBuffer
-        );
-
-        this._parentContext.bufferData(
-            this._parentContext.ARRAY_BUFFER,
-            new Float32Array(vertices),
-            this._parentContext.STATIC_DRAW
-        );
-
-        // unbind buffer, done for now
-        this._parentContext.bindBuffer(this._parentContext.ARRAY_BUFFER, null);
-
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            this._indexBuffer
-        );
-
-        this._parentContext.bufferData(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            new Uint16Array(indices),
-            this._parentContext.STATIC_DRAW
-        );
-
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            null
-        );
-
-    }
-
-    draw(WebGlShaderProgram) {
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._vertexBuffer
-        );
-
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            this._indexBuffer
-        )
-
-        this._parentContext.vertexAttribPointer(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.vertexPosition,
-            3,
-            this._parentContext.FLOAT,
-            false,
-            0,
-            0
-        );
-
-        this._parentContext.enableVertexAttribArray(WebGlShaderProgram._shaderInputLayout.attribLocations.vertexPosition);
-
-        this._parentContext.uniformMatrix4fv(
-            WebGlShaderProgram._shaderInputLayout.uniformLocations.worldMatrix,
-            false,
-            this._WorldMatrix
-        );
-
-        this._parentContext.drawElements(
-            this._parentContext.TRIANGLES,
-            this._indexCount,
-            this._parentContext.UNSIGNED_SHORT, 0);
-    }
-}
-
 class JSWebGlSquare {
-    constructor(WebGlShader) {
-        this._parentContext = WebGlShader._canvasContext;
+    // Create Square
+    /*
+    Input:
+    WebGlContext - The context this shape is for
+    c - A single colour  for this shape
+     */
+    constructor(WebGlContext,c) {
+        this._parentContext = WebGlContext._canvasContext;
+        this.transform = new TransForm();
 
         this._WorldMatrix = mat4.create();
         mat4.translate(
             this._WorldMatrix,
             this._WorldMatrix,
-            [0.0, 0.0, -0.5]
+            [0.0, 0.0, 0.0]
         );
 
         this._vertexBuffer = this._parentContext.createBuffer();
@@ -432,13 +358,10 @@ class JSWebGlSquare {
         let indices = [0, 1, 2, 1, 2, 3];
 
         let colours = [
-            1,0,0,1,
-
-            1,0,0,0.8,
-
-            0,1,0,0.5,
-
-            0,1,0,0.5
+            c.x,c.y,c.z,c.w,
+            c.x,c.y,c.z,c.w,
+            c.x,c.y,c.z,c.w,
+            c.x,c.y,c.z,c.w
         ];
 
         this._vCount = vertices.length;
@@ -492,9 +415,8 @@ class JSWebGlSquare {
             this._parentContext.ARRAY_BUFFER,
             null
         );
-
     }
-
+    // Draw - Draw with given shader. Shader should be bound to same context
     draw(WebGlShaderProgram) {
         WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer,this._indexBuffer);
 
@@ -512,8 +434,7 @@ class JSWebGlSquare {
         );
         this._parentContext.enableVertexAttribArray(WebGlShaderProgram._shaderInputLayout.attribLocations.colour)
 
-        WebGlShaderProgram.setWorldMatrix(this._WorldMatrix);
-
+        WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
         this._parentContext.drawElements(
             this._parentContext.TRIANGLES,
             this._indexCount,
@@ -525,30 +446,44 @@ class JSWebGlSquare {
 let testCanvas = document.getElementById("Canvas");
 let MyWebGlContext = new WebGlContext(testCanvas);
 
-let scale = 2;
+let scale = 1;
 MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
-let mySquare = new JSWebGlSquare(MyWebGlContext);
+let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0,0.5,1));
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
 
 
 let rotationVector = new WebGlVector3(0,0,0);
+let translateVector = new WebGlVector3();
 
 function loop() {
-    rotationVector.z += Time.deltaTime * 0.25;
+    rotationVector.z += Time.deltaTime * 0.3;
     console.log(rotationVector);
 
+
+    JSGameInput.DebugLogKeys();
+
+    if (JSGameInput.GetKey("w").Press){
+        console.log("OOOK!")
+        translateVector.y += Time.deltaTime *0.1;
+    }
     MyWebGlContext.clear(new WebGlVector4(0.5, 0.8, 1, 1));
     myShaderProgram.use();
-    myCamera.transform.rotation = rotationVector;
+    mySquare.transform.rotation = rotationVector;
+    mySquare2.transform.rotation = rotationVector;
+    mySquare2.transform.position = new WebGlVector3(translateVector.x,translateVector.y,-10)
+    mySquare.transform.position = new WebGlVector3(translateVector.x,translateVector.y,0)
+    mySquare2.transform.scale = new WebGlVector3(1.5,1.5,1.5);
+
     myCamera.setToShader(myShaderProgram);
     mySquare.draw(myShaderProgram);
+    mySquare2.draw(myShaderProgram);
     window.requestAnimationFrame(() => {
         loop();
     })
 }
-
 
 loop()
 

@@ -29,6 +29,27 @@ class JSGame_InputSystem {
         });
     }
 
+    GetKey(keyName){
+        let index = this._GetIndex(keyName);
+        if (index >= 0) {
+            console.log(`Key found at ${index}`);
+            return this._Keys[index];
+        }
+        else
+        {
+            return new JSGame_Key("none",false,false,false);
+        }
+
+    }
+
+    DebugLogKeys(){
+        console.log("Keys: ");
+        for (let i = 0; i < this._Keys.length; i++)
+        {
+            console.log(this._Keys[i].value);
+        }
+    }
+
     _GetIndex(keyString) {
         let returnIndex = -1;
         for (let i = 0; i < this._Keys.length; i++) {
@@ -37,7 +58,7 @@ class JSGame_InputSystem {
             }
         }
 
-        return returnIndex
+        return returnIndex;
     }
 
 
@@ -84,5 +105,5 @@ class JSGame_InputSystem {
 }
 
 
-let JSGameInput = new JSGame_InputSystem();
+const JSGameInput = new JSGame_InputSystem();
 
