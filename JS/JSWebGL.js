@@ -458,13 +458,13 @@ class JSWebGlSquare {
 let testCanvas = document.getElementById("Canvas");
 let MyWebGlContext = new WebGlContext(testCanvas);
 
-let scale = 1.5;
+let scale = 2;
 MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
-let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,1,0,0.8));
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
+let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,1,0.8));
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
 
 
 let rotationVector = new WebGlVector3(0,0,0);
@@ -494,7 +494,7 @@ function loop() {
         mySquare.transform.position[0] += Time.deltaTime * speed;
         mySquare2.transform.position[0] += Time.deltaTime * speed;
     }
-    MyWebGlContext.clear(new WebGlVector4(1,1,1,1));
+    MyWebGlContext.clear(new WebGlVector4(0,0,0,1));
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.rotation[2] = rotationVector.z;
