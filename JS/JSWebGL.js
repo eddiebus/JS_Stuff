@@ -146,18 +146,22 @@ class WebGlContext {
 
     // Clear canvas to solid color
     clear(newColour = new WebGlVector4(0, 0, 0, 1)) {
-        this._canvasContext.clearColor(newColour.x, newColour.y, newColour.z, newColour.w);
-        this._canvasContext.clearDepth(1.0);
+        this._canvasContext.colorMask(false,false,false,true)
+        this._canvasContext.clearColor(0, 0,0,1);
         this._canvasContext.enable(this._canvasContext.BLEND);
+        this._canvasContext.blendFunc(this._canvasContext.ONE,this._canvasContext.ONE_MINUS_DST_ALPHA);
+
         this._canvasContext.enable(this._canvasContext.DEPTH_TEST);
+        this._canvasContext.depthFunc(this._canvasContext.LEQUAL);
+
         this._canvasContext.disable(this._canvasContext.CULL_FACE);
         this._canvasContext.sampleCoverage(1, false);
-        this._canvasContext.depthFunc(this._canvasContext.LESS);
-        this._canvasContext.blendFunc(this._canvasContext.SRC_ALPHA,this._canvasContext.ONE_MINUS_SRC_ALPHA);
+
+        this._canvasContext.colorMask(true,true,true,true)
+
 
         // Clear canvas
-        this._canvasContext.clear(this._canvasContext.COLOR_BUFFER_BIT | this._canvasContext.DEPTH_BUFFER_BIT);
-
+        this._canvasContext.clear(this._canvasContext.COLOR_BUFFER_BIT);
     }
 
     createVertexShader(ShaderText) {
@@ -180,6 +184,7 @@ class JSWebGLShaderProgram {
     constructor(WebGlContext) {
         this._parentContext = WebGlContext._canvasContext;
         this._shaderProgram = this._parentContext.createProgram();
+
         this.vShaderCode = `
 attribute vec3 coordinates;
 attribute vec4 colour;
@@ -194,14 +199,16 @@ void main(void) {
     vColour = colour;
 }
         `
-
         this.fragShaderCode = `
 precision mediump float;
 varying vec4 vColour;
+
 void main() {
-    gl_FragColor = vColour;
+        gl_FragColor = vColour;
+    
 }
         `
+
         this.vShader = WebGlContext.createVertexShader(this.vShaderCode);
         this.fragShader = WebGlContext.createFragmentShader(this.fragShaderCode);
 
@@ -458,11 +465,13 @@ MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
 let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0,0.5,1));
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,0.5));
 
 
 let rotationVector = new WebGlVector3(0,0,0);
 let translateVector = new WebGlVector3();
+
+let topAlpha = 0;
 
 function loop() {
     rotationVector.z += Time.deltaTime * 0.3;
@@ -486,12 +495,15 @@ function loop() {
         mySquare.transform.position[0] += Time.deltaTime * speed;
         mySquare2.transform.position[0] += Time.deltaTime * speed;
     }
-    MyWebGlContext.clear(new WebGlVector4(0.5, 0.8, 1, 1));
+    MyWebGlContext.clear();
     myShaderProgram.use();
     mySquare.transform.rotation[2] += Time.deltaTime * 0.3;
     mySquare2.transform.rotation[2] += Time.deltaTime * 0.3;
     mySquare2.transform.scale = [300,300,300,1];
     mySquare.transform.scale = [200,200,200,1];
+    mySquare2.transform.position[2] = -10
+    mySquare.transform.position[2] = -9
+
 
     myCamera.Size = [screen.width,screen.height]
     myCamera.setToShader(myShaderProgram);
