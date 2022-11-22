@@ -109,8 +109,8 @@ class TransForm {
 // WebGl Context is Linked to HTML Canas
 class WebGlContext {
     constructor(HTMLCanvas) {
-        this._canvasContext = HTMLCanvas.getContext("webgl2", {
-            premultipliedAlpha: true
+        this._canvasContext = HTMLCanvas.getContext("webgl", {
+            premultipliedAlpha: false
         });
         this._canvas = HTMLCanvas;
 
@@ -146,22 +146,22 @@ class WebGlContext {
 
     // Clear canvas to solid color
     clear(newColour = new WebGlVector4(0, 0, 0, 1)) {
-        this._canvasContext.colorMask(false,false,false,true)
-        this._canvasContext.clearColor(0, 0,0,1);
+        this._canvasContext.clearColor(newColour.x, newColour.y,newColour.z,newColour.w);
+        this._canvasContext.clearDepth(1);
+
         this._canvasContext.enable(this._canvasContext.BLEND);
-        this._canvasContext.blendFunc(this._canvasContext.ONE,this._canvasContext.ONE_MINUS_DST_ALPHA);
+        this._canvasContext.blendFunc(
+            this._canvasContext.SRC_ALPHA,
+            this._canvasContext.ONE_MINUS_SRC_ALPHA
+        );
 
         this._canvasContext.enable(this._canvasContext.DEPTH_TEST);
-        this._canvasContext.depthFunc(this._canvasContext.LEQUAL);
-
+        this._canvasContext.depthFunc(this._canvasContext.LESS)
         this._canvasContext.disable(this._canvasContext.CULL_FACE);
-        this._canvasContext.sampleCoverage(1, false);
-
-        this._canvasContext.colorMask(true,true,true,true)
 
 
         // Clear canvas
-        this._canvasContext.clear(this._canvasContext.COLOR_BUFFER_BIT);
+        this._canvasContext.clear(this._canvasContext.COLOR_BUFFER_BIT|this._canvasContext.DEPTH_BUFFER_BIT);
     }
 
     createVertexShader(ShaderText) {
@@ -204,10 +204,9 @@ precision mediump float;
 varying vec4 vColour;
 
 void main() {
-        gl_FragColor = vColour;
-    
+        gl_FragColor = vec4(vColour.rgb * vColour.a, vColour.a);
 }
-        `
+`
 
         this.vShader = WebGlContext.createVertexShader(this.vShaderCode);
         this.fragShader = WebGlContext.createFragmentShader(this.fragShaderCode);
@@ -301,7 +300,7 @@ class JSWebGlCamera {
 
         this.fov = 45 * Math.PI / 180;
         this.aspectRatio = this._parentContext.canvas.clientWidth / this._parentContext.canvas.clientHeight;
-        this.zNear = 0;
+        this.zNear = 0.1;
         this.zFar = 100.0;
         this._projectionMatrix = mat4.create();
         this._viewMatrix = mat4.create();
@@ -464,8 +463,8 @@ MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
-let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0,0.5,1));
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,0.5));
+let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,1,0,0.8));
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
 
 
 let rotationVector = new WebGlVector3(0,0,0);
@@ -495,20 +494,22 @@ function loop() {
         mySquare.transform.position[0] += Time.deltaTime * speed;
         mySquare2.transform.position[0] += Time.deltaTime * speed;
     }
-    MyWebGlContext.clear();
+    MyWebGlContext.clear(new WebGlVector4(1,1,1,1));
     myShaderProgram.use();
-    mySquare.transform.rotation[2] += Time.deltaTime * 0.3;
-    mySquare2.transform.rotation[2] += Time.deltaTime * 0.3;
+    mySquare.transform.rotation[2] = rotationVector.z;
+    mySquare2.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.scale = [300,300,300,1];
     mySquare.transform.scale = [200,200,200,1];
     mySquare2.transform.position[2] = -10
-    mySquare.transform.position[2] = -9
+    mySquare.transform.position[2] = -5
+    mySquare.transform.position[1] = 250;
 
 
     myCamera.Size = [screen.width,screen.height]
+    myCamera.transform.position = [0,0,-10];
     myCamera.setToShader(myShaderProgram);
-    mySquare.draw(myShaderProgram);
     mySquare2.draw(myShaderProgram);
+    mySquare.draw(myShaderProgram);
     window.requestAnimationFrame(() => {
         loop();
     })
