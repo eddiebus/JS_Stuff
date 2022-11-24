@@ -544,6 +544,10 @@ function loop() {
 
     }
 
+    if (testCanvas_TouchInput.touch[0].touchEnd){
+        console.log("Start! Touch");
+    }
+
     MyWebGlContext.clear(new WebGlVector4(0,0,1,1));
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;

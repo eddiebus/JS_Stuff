@@ -59,6 +59,7 @@ class JSGameTouch {
             this.endPos = [x,y];
             this.touchStart = true;
             this.isPressed = true;
+            this._Frames = 0;
         }
     }
 
@@ -120,6 +121,7 @@ class JSGameTouch {
         this.touchStart = false;
         this.isPressed = false;
         this.moveDelta = [0,0];
+        this._Frames = 0;
     }
 
     _Reset() {
@@ -134,6 +136,7 @@ class JSGameTouch {
     }
 
     _Tick() {
+
         if (this.isPressed | this.touchEnd) {
             this._Frames += 1;
             if (this._Frames >= 2) {
@@ -141,9 +144,7 @@ class JSGameTouch {
             }
         }
 
-        if (this.touchStart){
-            console.log("got this.touchStart");
-        }
+
 
         window.requestAnimationFrame((time) => {
             this._Tick();
