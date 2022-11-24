@@ -131,7 +131,10 @@ class WebGlContext {
             if (this._canFullScreen) {
                 event.target.requestFullscreen();
             }
-        })
+        });
+        this._canvas.addEventListener("fullscreenchange", (event) =>{
+            this._updateSize();
+        });
         this._canvas.addEventListener("resize", (event) =>{
             this._updateSize();
         })
@@ -523,6 +526,10 @@ function loop() {
             mySquare2.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
         }
 
+        if (testCanvas_TouchInput.touch[1].isPressed){
+            rotationVector.z += Time.deltaTime;
+        }
+
 
         if (JSGameInput.GetKey("w").Press){
             mySquare.transform.position[1] += Time.deltaTime * speed;
@@ -541,12 +548,8 @@ function loop() {
             mySquare.transform.position[0] += Time.deltaTime * speed;
             mySquare2.transform.position[0] += Time.deltaTime * speed;
         }
-
     }
 
-    if (testCanvas_TouchInput.touch[0].touchEnd){
-        console.log("Start! Touch");
-    }
 
     MyWebGlContext.clear(new WebGlVector4(0,0,1,1));
     myShaderProgram.use();
