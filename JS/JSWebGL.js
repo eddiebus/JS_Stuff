@@ -132,16 +132,31 @@ class WebGlContext {
                 event.target.requestFullscreen();
             }
         })
+        this._canvas.addEventListener("resize", (event) =>{
+            this._updateSize();
+        })
+
+        this._updateSize();
 
         window.requestAnimationFrame((time) => {
             this._Tick();
         })
     }
 
-    setResolution(width, height) {
+
+    _updateSize() {
+        if (this.isFullscreen) {
+            this._setResolution(screen.width,screen.height);
+        }
+        else {
+            let clientRect = this._canvas.getBoundingClientRect();
+            this._setResolution(clientRect.width,clientRect.height);
+        }
+    }
+
+    _setResolution(width, height) {
         this._canvas.width = width;
         this._canvas.height = height;
-
         this._canvasContext.viewport(0, 0, width, height);
     }
 
@@ -479,13 +494,12 @@ let testCanvas_TouchInput = new JSGameTouchInput(testCanvas);
 let MyWebGlContext = new WebGlContext(testCanvas);
 
 let scale = 2;
-MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
 MyWebGlContext.setCanFullScreen(true);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
-let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,1,0.8));
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,1,1));
+let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,0.5,1));
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
 
 
 let rotationVector = new WebGlVector3(0,0,0);
@@ -499,43 +513,38 @@ function loop() {
     }
 
     if (MyWebGlContext.isFullscreen) {
-        mySquare.transform.position[0] += testCanvas_MouseInput.moveDelta[0] * Time.deltaTime;
-        mySquare2.transform.position[0] += testCanvas_MouseInput.moveDelta[0] * Time.deltaTime;
-        mySquare.transform.position[1] += testCanvas_MouseInput.moveDelta[1] * Time.deltaTime;
-        mySquare2.transform.position[1] += testCanvas_MouseInput.moveDelta[1] * Time.deltaTime;
+        let speed = 1.5
+
+        if (testCanvas_TouchInput.touch[0].isPressed) {
+            mySquare.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
+            mySquare.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
+
+            mySquare2.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
+            mySquare2.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
+        }
+
+
+        if (JSGameInput.GetKey("w").Press){
+            mySquare.transform.position[1] += Time.deltaTime * speed;
+            mySquare2.transform.position[1] += Time.deltaTime * speed;
+        }
+        else if (JSGameInput.GetKey("s").Press){
+            mySquare.transform.position[1] -= Time.deltaTime * speed;
+            mySquare2.transform.position[1] -= Time.deltaTime * speed;
+        }
+
+        if (JSGameInput.GetKey("a").Press){
+            mySquare.transform.position[0] -= Time.deltaTime * speed;
+            mySquare2.transform.position[0] -= Time.deltaTime * speed;
+        }
+        else if (JSGameInput.GetKey("d").Press){
+            mySquare.transform.position[0] += Time.deltaTime * speed;
+            mySquare2.transform.position[0] += Time.deltaTime * speed;
+        }
+
     }
 
-    if (testCanvas_TouchInput.touch[0].isPressed) {
-        mySquare.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
-        mySquare.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
-
-        mySquare2.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
-        mySquare2.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
-    }
-
-
-    let speed = 1
-    if (JSGameInput.GetKey("w").Press){
-        mySquare.transform.position[1] += Time.deltaTime * speed;
-        mySquare2.transform.position[1] += Time.deltaTime * speed;
-    }
-    else if (JSGameInput.GetKey("s").Press){
-        mySquare.transform.position[1] -= Time.deltaTime * speed;
-        mySquare2.transform.position[1] -= Time.deltaTime * speed;
-    }
-
-    if (JSGameInput.GetKey("a").Press){
-        mySquare.transform.position[0] -= Time.deltaTime * speed;
-        mySquare2.transform.position[0] -= Time.deltaTime * speed;
-    }
-    else if (JSGameInput.GetKey("d").Press){
-        mySquare.transform.position[0] += Time.deltaTime * speed;
-        mySquare2.transform.position[0] += Time.deltaTime * speed;
-    }
-
-
-
-    MyWebGlContext.clear(new WebGlVector4(0,0,0,1));
+    MyWebGlContext.clear(new WebGlVector4(0,0,1,1));
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.rotation[2] = rotationVector.z;
@@ -545,7 +554,7 @@ function loop() {
     mySquare.transform.position[2] = -5
 
 
-    myCamera.Size = [screen.width,screen.height]
+    myCamera.Size = [testCanvas.clientWidth,testCanvas.clientHeight];
     myCamera.transform.position = [0,0,-10];
     myCamera.setToShader(myShaderProgram);
     mySquare2.draw(myShaderProgram);

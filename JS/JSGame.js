@@ -33,13 +33,19 @@ class JSGameTouch {
     }
 
     _handleTouchStartEvent(event){
-        if (this.id >= event.touches.length) { return; }
+        let myTouch = null;
+        for (let i = 0; i < event.changedTouches.length;i++){
+            if (event.changedTouches[i].identifier == this.id){
+                myTouch = event.changedTouches[i];
+            }
+        }
+
+        if (!myTouch) { return; }
         else{
-            let targetTouch = event.touches[this.id];
             let rect = this._targetElement.getBoundingClientRect();
 
-            let x = targetTouch.pageX - rect.left;
-            let y = targetTouch.pageY - rect.top;
+            let x = myTouch.pageX - rect.left;
+            let y = myTouch.pageY - rect.top;
 
             if (x > rect.width) { x = rect.width; }
             else if (x < 0 ) { x = 0;}
@@ -57,13 +63,20 @@ class JSGameTouch {
     }
 
     _handleTouchMoveEvent(event) {
-        if (this.id >= event.touches.length) { return; }
+        //Check if this touch did move
+        let myTouch = null;
+        for (let i = 0; i < event.changedTouches.length;i++){
+            if (event.changedTouches[i].identifier == this.id){
+                myTouch = event.changedTouches[i];
+            }
+        }
+
+        if (!myTouch) { return; }
         else{
-            let targetTouch = event.touches[this.id];
             let rect = this._targetElement.getBoundingClientRect();
 
-            let x = targetTouch.pageX - rect.left;
-            let y = targetTouch.pageY - rect.top;
+            let x = myTouch.pageX - rect.left;
+            let y = myTouch.pageY - rect.top;
 
             if (x > rect.width) { x = rect.width; }
             else if (x < 0 ) { x = 0;}
@@ -94,6 +107,16 @@ class JSGameTouch {
     }
 
     _handleTouchEndEvent(event) {
+        //Check if this touch did end
+        let myTouch = null;
+        for (let i = 0; i < event.changedTouches.length;i++){
+            if (event.changedTouches[i].identifier == this.id){
+                myTouch = event.changedTouches[i];
+            }
+        }
+
+        if (!myTouch) { return;}
+        this.touchEnd = true;
         this.touchStart = false;
         this.isPressed = false;
         this.moveDelta = [0,0];
@@ -103,11 +126,15 @@ class JSGameTouch {
         this.moveDelta = [0, 0];
         this._Frames = 0;
         this.touchStart = false;
-        this.touchEnd = false;
+
+        if (this.touchEnd) {
+            this.touchEnd = false;
+            this.dirVector = [0,0];
+        }
     }
 
     _Tick() {
-        if (this.touchStart | this.touchEnd) {
+        if (this.isPressed | this.touchEnd) {
             this._Frames += 1;
             if (this._Frames >= 2) {
                 this._Reset();
