@@ -480,7 +480,7 @@ let MyWebGlContext = new WebGlContext(testCanvas);
 
 let scale = 2;
 MyWebGlContext.setResolution(screen.width * scale, screen.height * scale);
-MyWebGlContext.setCanFullScreen(false);
+MyWebGlContext.setCanFullScreen(true);
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
@@ -508,6 +508,9 @@ function loop() {
     if (testCanvas_TouchInput.touch[0].isPressed) {
         mySquare.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
         mySquare.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
+
+        mySquare2.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
+        mySquare2.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
     }
 
 
