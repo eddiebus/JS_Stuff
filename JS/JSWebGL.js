@@ -207,6 +207,7 @@ class WebGlContext {
         }
         else { this.isFullscreen = false;}
 
+        this._updateSize();
         window.requestAnimationFrame((time) => {
             this._Tick();
         })
@@ -551,7 +552,7 @@ function loop() {
     }
 
 
-    MyWebGlContext.clear(new WebGlVector4(0,0,1,1));
+    MyWebGlContext.clear(new WebGlVector4(0,1,1,1));
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.rotation[2] = rotationVector.z;
