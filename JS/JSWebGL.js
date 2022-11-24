@@ -114,7 +114,6 @@ class WebGlContext {
         });
         this._canvas = HTMLCanvas;
 
-
         if (this._canvasContext === null) {
             console.log("WebGL error: Failed to get Canvas Context");
             return;
@@ -127,6 +126,7 @@ class WebGlContext {
 
         this._canFullScreen = true;
         this.isFullscreen = false;
+        this.resolutionScale = 1;
         this._canvas.addEventListener("click", (event) => {
             if (this._canFullScreen) {
                 event.target.requestFullscreen();
@@ -148,12 +148,18 @@ class WebGlContext {
 
 
     _updateSize() {
+        if (this.resolutionScale < 0.25) {
+            this.resolutionScale = 0.25;
+        }
+
         if (this.isFullscreen) {
-            this._setResolution(screen.width,screen.height);
+            this._setResolution(screen.width * this.resolutionScale,screen.height * this.resolutionScale);
         }
         else {
             let clientRect = this._canvas.getBoundingClientRect();
-            this._setResolution(clientRect.width,clientRect.height);
+            this._setResolution(
+                clientRect.width * this.resolutionScale,
+                clientRect.height * this.resolutionScale);
         }
     }
 
@@ -497,8 +503,8 @@ testCanvas_MouseInput.locked = false;
 let testCanvas_TouchInput = new JSGameTouchInput(testCanvas);
 let MyWebGlContext = new WebGlContext(testCanvas);
 
-let scale = 2;
 MyWebGlContext.setCanFullScreen(true);
+MyWebGlContext.resolutionScale = 2;
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
