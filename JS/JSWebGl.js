@@ -546,7 +546,6 @@ let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
 let rotationVector = new WebGlVector3(0,0,0);
 
 
-
 function loop() {
     if (JSGameInput.GetKey("e").Press) {
         rotationVector.z += Time.deltaTime * 0.3;
