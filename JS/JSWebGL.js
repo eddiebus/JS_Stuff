@@ -11,7 +11,6 @@ class WebGlVector3 {
     }
 }
 
-
 class WebGlVector4 {
     constructor(x = 0.0, y = 0.0, z = 0.0, w = 0.0) {
         this.x = x;
@@ -515,8 +514,6 @@ let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
 let rotationVector = new WebGlVector3(0,0,0);
 let translateVector = new WebGlVector3();
 
-
-
 function loop() {
     if (JSGameInput.GetKey("e").Press) {
         rotationVector.z += Time.deltaTime * 0.3;
@@ -538,6 +535,10 @@ function loop() {
         }
 
 
+        if (testCanvas_TouchInput.touch[0].Down){
+            console.log("Touch 0:Start");
+        }
+
         if (JSGameInput.GetKey("w").Press){
             mySquare.transform.position[1] += Time.deltaTime * speed;
             mySquare2.transform.position[1] += Time.deltaTime * speed;
@@ -557,13 +558,12 @@ function loop() {
         }
     }
 
-
     MyWebGlContext.clear(new WebGlVector4(0,1,1,1));
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.rotation[2] = rotationVector.z;
-    mySquare2.transform.scale = [300,300,300,1];
-    mySquare.transform.scale = [200,200,200,1];
+    mySquare2.transform.scale = [200,200,200,1];
+    mySquare.transform.scale = [150,150,150,1];
     mySquare2.transform.position[2] = -10
     mySquare.transform.position[2] = -5
 

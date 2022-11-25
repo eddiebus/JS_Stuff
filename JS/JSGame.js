@@ -1,19 +1,27 @@
+// Touch Input Object
 class JSGameTouch {
     constructor(touchIndex,HTMLElement) {
         this.id = touchIndex;
+        //HTML Element touch is bound to
         this._targetElement = HTMLElement;
-        this.startPos = [0,0];
-        this._lastPos = [0,0];
-        this.endPos = [0,0];
-        this.dirVector = [0,0];
+        this._targetElementRect = this._targetElement.getBoundingClientRect();
+
+        this.startPos = [0,0]; //Start point of touch
+        this._lastPos = [0,0]; //Last point in previous frame
+        this.endPos = [0,0]; //End point of touch
+        this.dirVector = [0,0]; //Direction vector of touch
 
         this.moveDelta = [0,0];
+
+        //Frames since touchStart/End Event
         this._Frames = 0;
 
-        this.touchStart = false;
+        //Start/End/ifPress Flags
+        this.Down = false;
         this.isPressed = false;
+        this.Up = false;
+        //Duration of touch
         this.duration = 0;
-        this.touchEnd = false;
 
         window.addEventListener("touchstart",(event) => {
             this._handleTouchStartEvent(event);
@@ -32,32 +40,40 @@ class JSGameTouch {
         })
     }
 
-    _handleTouchStartEvent(event){
-        let myTouch = null;
+    //Check for ID match in touch event
+    //Return: The touch object found else null
+    _CheckSelfInTouchEvent(event){
+        let matchTouch = null;
         for (let i = 0; i < event.changedTouches.length;i++){
             if (event.changedTouches[i].identifier == this.id){
-                myTouch = event.changedTouches[i];
+                matchTouch = event.changedTouches[i];
             }
         }
 
+        return matchTouch;
+    }
+
+    _handleTouchStartEvent(event){
+        let myTouch = this._CheckSelfInTouchEvent(event);
+
         if (!myTouch) { return; }
         else{
-            let rect = this._targetElement.getBoundingClientRect();
+            this._targetElementRect = this._targetElement.getBoundingClientRect();
 
-            let x = myTouch.pageX - rect.left;
-            let y = myTouch.pageY - rect.top;
+            let x = myTouch.pageX - this._targetElementRect.left;
+            let y = myTouch.pageY - this._targetElementRect.top;
 
-            if (x > rect.width) { x = rect.width; }
+            if (x > this._targetElementRect.width) { x = this._targetElementRect.width; }
             else if (x < 0 ) { x = 0;}
 
-            if (y > rect.height) { y = rect.height; }
+            if (y > this._targetElementRect.height) { y = this._targetElementRect.height; }
             else if (y < 0 ) { y = 0;}
 
-            y = rect.height - y;
+            y = this._targetElementRect.height - y;
             
             this.startPos = [x,y];
             this.endPos = [x,y];
-            this.touchStart = true;
+            this.Down = true;
             this.isPressed = true;
             this._Frames = 0;
         }
@@ -65,28 +81,22 @@ class JSGameTouch {
 
     _handleTouchMoveEvent(event) {
         //Check if this touch did move
-        let myTouch = null;
-        for (let i = 0; i < event.changedTouches.length;i++){
-            if (event.changedTouches[i].identifier == this.id){
-                myTouch = event.changedTouches[i];
-            }
-        }
+        let myTouch = this._CheckSelfInTouchEvent(event);
 
         if (!myTouch) { return; }
         else{
-            let rect = this._targetElement.getBoundingClientRect();
+            this._targetElementRect = this._targetElement.getBoundingClientRect();
 
-            let x = myTouch.pageX - rect.left;
-            let y = myTouch.pageY - rect.top;
+            let x = myTouch.pageX - this._targetElementRect.left;
+            let y = myTouch.pageY - this._targetElementRect.top;
 
-            if (x > rect.width) { x = rect.width; }
+            if (x > this._targetElementRect.width) { x = this._targetElementRect.width; }
             else if (x < 0 ) { x = 0;}
 
-            if (y > rect.height) { y = rect.height; }
+            if (y > this._targetElementRect.height) { y = this._targetElementRect.height; }
             else if (y < 0 ) { y = 0;}
 
-            y = rect.height - y;
-
+            y = this._targetElementRect.height - y;
 
             this.endPos = [x,y];
 
@@ -99,11 +109,8 @@ class JSGameTouch {
                 this.endPos[0] - this.startPos[0],
                 this.endPos[1] - this.startPos[1]
             ]
-
             this._lastPos = this.endPos;
-
             this.isPressed = true;
-            console.log(` Press= ${this.isPressed} |Move delta = ${this.moveDelta} | Dir delta = ${this.dirVector}`);
         }
     }
 
@@ -117,41 +124,42 @@ class JSGameTouch {
         }
 
         if (!myTouch) { return;}
-        this.touchEnd = true;
-        this.touchStart = false;
+        this.Up = true;
+        this.Down = false;
         this.isPressed = false;
         this.moveDelta = [0,0];
         this._Frames = 0;
     }
 
+    // Reset events flags in object.
     _Reset() {
         this.moveDelta = [0, 0];
         this._Frames = 0;
-        this.touchStart = false;
-
-        if (this.touchEnd) {
-            this.touchEnd = false;
-            this.dirVector = [0,0];
+        this.Down = false;
+        if (this.Up) {
+            this.duration = 0;
+            this.Up = false;
+            this.dirVector = [0, 0];
         }
     }
 
     _Tick() {
-
-        if (this.isPressed | this.touchEnd) {
+        //Check if flags must be reset
+        if (this.isPressed | this.Up) {
+            this.duration += Time.deltaTime;
             this._Frames += 1;
             if (this._Frames >= 2) {
                 this._Reset();
             }
         }
-
-
-
         window.requestAnimationFrame((time) => {
             this._Tick();
         })
     }
 }
 
+//Touch input handler
+//This is class is made per HTML Element
 class JSGameTouchInput{
     constructor(HTMLElement) {
         this._targetElement = HTMLElement;
@@ -162,6 +170,7 @@ class JSGameTouchInput{
     }
 }
 
+// Mouse input handler
 class JSGameMouseInput{
     constructor(HTMLElement) {
         this.pos = [0,0];
@@ -227,6 +236,7 @@ class JSGameMouseInput{
 
 }
 
+// Keyboard Key Object
 class JSGame_Key {
     constructor(KeyString, KeyDown, KeyPress) {
         this.value = KeyString;
@@ -272,6 +282,7 @@ class JSGame_Key {
     }
 }
 
+// Keyboard Input Handler
 class JSGame_InputSystem {
     constructor() {
         this._Keys = []
