@@ -20,6 +20,34 @@ class WebGlVector4 {
     }
 }
 
+
+function GetVectorMagnitude(inputVector){
+    let result = 0;
+    let vecSum = 0;
+    for (let i = 0; i < inputVector.length; i++){
+        vecSum += Math.pow(inputVector[i],2);
+    }
+
+    result = Math.sqrt(vecSum);
+    return result;
+}
+
+function GetNormalisedVector(inputVector){
+    let returnVector = []
+    let magnitude = GetVectorMagnitude(inputVector);
+
+    for (let i = 0; i < inputVector.length; i++){
+        if (magnitude > 0) {
+            returnVector.push(inputVector[i] / magnitude);
+        }
+        else{
+            returnVector.push(0);
+        }
+    }
+
+    return returnVector;
+}
+
 class TransForm {
     constructor() {
         this.position = vec4.create();
@@ -104,6 +132,7 @@ class TransForm {
         return returnMatrix;
     }
 }
+
 
 // WebGl Context is Linked to HTML Canas
 class WebGlContext {
@@ -520,25 +549,26 @@ function loop() {
     }
 
     if (MyWebGlContext.isFullscreen) {
-        let speed = 1.5
+        let speed = 2;
+        let touchSpeed = 0.8;
 
         if (testCanvas_TouchInput.touch[0].isPressed) {
-            mySquare.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
-            mySquare.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
+            mySquare.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime * touchSpeed;
+            mySquare.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime * touchSpeed;
 
-            mySquare2.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime / 100;
-            mySquare2.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime / 100;
+            mySquare2.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime * touchSpeed;
+            mySquare2.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime * touchSpeed;
         }
 
         if (testCanvas_TouchInput.touch[1].isPressed){
             rotationVector.z += Time.deltaTime;
         }
 
-
-        if (testCanvas_TouchInput.touch[0].Down){
-            console.log("Touch 0:Start");
+        if (testCanvas_TouchInput.touch[0].isPressed){
+            console.log(`Touch Direction  =  ${
+                testCanvas_TouchInput.touch[0].dirVector
+            }`)
         }
-
         if (JSGameInput.GetKey("w").Press){
             mySquare.transform.position[1] += Time.deltaTime * speed;
             mySquare2.transform.position[1] += Time.deltaTime * speed;

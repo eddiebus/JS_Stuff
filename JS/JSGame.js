@@ -1,3 +1,30 @@
+function GetVectorMagnitude(inputVector){
+    let result = 0;
+    let vecSum = 0;
+    for (let i = 0; i < inputVector.length; i++){
+        vecSum += Math.pow(inputVector[i],2);
+    }
+
+    result = Math.sqrt(vecSum);
+    return result;
+}
+
+function GetNormalisedVector(inputVector){
+    let returnVector = []
+    let magnitude = GetVectorMagnitude(inputVector);
+
+    for (let i = 0; i < inputVector.length; i++){
+        if (magnitude > 0) {
+            returnVector.push(inputVector[i] / magnitude);
+        }
+        else{
+            returnVector.push(0);
+        }
+    }
+
+    return returnVector;
+}
+
 // Touch Input Object
 class JSGameTouch {
     constructor(touchIndex,HTMLElement) {
@@ -9,6 +36,7 @@ class JSGameTouch {
         this.startPos = [0,0]; //Start point of touch
         this._lastPos = [0,0]; //Last point in previous frame
         this.endPos = [0,0]; //End point of touch
+        this.distanceVector = [0,0];
         this.dirVector = [0,0]; //Direction vector of touch
 
         this.moveDelta = [0,0];
@@ -105,10 +133,11 @@ class JSGameTouch {
                 this.endPos[1] - this._lastPos[1]
             ]
 
-            this.dirVector = [
+            this.distanceVector = [
                 this.endPos[0] - this.startPos[0],
                 this.endPos[1] - this.startPos[1]
             ]
+            this.dirVector = GetNormalisedVector(this.distanceVector);
             this._lastPos = this.endPos;
             this.isPressed = true;
         }
