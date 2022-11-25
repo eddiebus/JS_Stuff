@@ -524,6 +524,9 @@ class JSWebGlSquare {
 }
 
 // Testing
+let TextContext = document.createElement('canvas');
+console.log(TextContext);
+
 let testCanvas = document.getElementById("Canvas");
 let testCanvas_MouseInput = new JSGameMouseInput(testCanvas);
 testCanvas_MouseInput.locked = false;
@@ -541,7 +544,8 @@ let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
 
 
 let rotationVector = new WebGlVector3(0,0,0);
-let translateVector = new WebGlVector3();
+
+
 
 function loop() {
     if (JSGameInput.GetKey("e").Press) {
@@ -598,7 +602,7 @@ function loop() {
     mySquare.transform.position[2] = -5
 
 
-    myCamera.Size = [testCanvas.clientWidth,testCanvas.clientHeight];
+    myCamera.Size = [testCanvas.width,testCanvas.height];
     myCamera.transform.position = [0,0,-10];
     myCamera.setToShader(myShaderProgram);
     mySquare2.draw(myShaderProgram);
