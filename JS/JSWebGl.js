@@ -556,22 +556,34 @@ function loop() {
         let touchSpeed = 0.8;
 
         if (testCanvas_TouchInput.touch[0].isPressed) {
-            mySquare.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime * touchSpeed;
-            mySquare.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime * touchSpeed;
+            let touchDisVector = testCanvas_TouchInput.touch[0].distanceVector;
+            let moveVector = [touchDisVector];
+            let moveRange = 50;
+            for (let i = 0; i < moveVector.length; i++) {
+                let newValue = moveVector[i];
+                if (moveVector[i] > moveRange){
+                    newValue = moveRange;
+                }
+                else if (moveVector[i] < -moveRange){
+                    newValue = -moveRange
+                }
 
-            mySquare2.transform.position[0] += testCanvas_TouchInput.touch[0].dirVector[0] * Time.deltaTime * touchSpeed;
-            mySquare2.transform.position[1] += testCanvas_TouchInput.touch[0].dirVector[1] * Time.deltaTime * touchSpeed;
+                newValue = newValue/moveRange;
+                moveVector[i] = newValue;
+            }
+            console.log(`Distance from touch = ${testCanvas_TouchInput.touch[0].distanceVector}`);
+
+            mySquare.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
+            mySquare.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
+
+            mySquare2.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
+            mySquare2.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
         }
 
         if (testCanvas_TouchInput.touch[1].isPressed){
             rotationVector.z += Time.deltaTime;
         }
 
-        if (testCanvas_TouchInput.touch[0].isPressed){
-            console.log(`Touch Direction  =  ${
-                testCanvas_TouchInput.touch[0].dirVector
-            }`)
-        }
         if (JSGameInput.GetKey("w").Press){
             mySquare.transform.position[1] += Time.deltaTime * speed;
             mySquare2.transform.position[1] += Time.deltaTime * speed;

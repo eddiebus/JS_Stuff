@@ -137,6 +137,7 @@ class JSGameTouch {
                 this.endPos[0] - this.startPos[0],
                 this.endPos[1] - this.startPos[1]
             ]
+
             this.dirVector = GetNormalisedVector(this.distanceVector);
             this._lastPos = this.endPos;
             this.isPressed = true;

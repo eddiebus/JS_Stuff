@@ -4,7 +4,7 @@ class WebGlText {
         this._canvasContext = this._targetCanvas.getContext("2d");
         this.TextString = "";
         this.Font = "arial";
-        this.FontSize = 5;
+        this.FontSize = 18;
         this.textAlign = "center";
         this.fillStyle = "#333333";
 
@@ -22,6 +22,7 @@ class WebGlText {
 
         let measureMetric = this._canvasContext.measureText(string);
         let width = measureMetric.actualBoundingBoxLeft + measureMetric.actualBoundingBoxRight;
+
         return width;
     }
 
@@ -33,13 +34,23 @@ class WebGlText {
 
         let currentWord = "";
         for (let char = 0; char < string.length; char++) {
-            currentWord += string[char];
+
+            // Don't add new line char
+            if (string[char] != "\n") {
+                currentWord += string[char];
+            }
+
             if (
                 string[char] == " " ||
-                string[char] == "\n" ||
                 string[char] == "."
             ) {
                 returnList.push([currentWord, this._getRenderLength(currentWord)]);
+                currentWord = "";
+            }
+            // If char is new line, add word then nl char
+            else if (string[char] == "\n"){
+                returnList.push([currentWord, this._getRenderLength(currentWord)]);
+                returnList.push(["\n",this._getRenderLength("\n")]);
                 currentWord = "";
             }
         }
@@ -61,42 +72,75 @@ class WebGlText {
         let currentLine = "";
         let remainingLength = this.properties.maxLength;
 
-        // There is no maxLength put string in one line
+        // There is no maxLength ( = 0)
+        // String is one line (except \n)
         if (this.properties.maxLength <= 0) {
             for (let i = 0; i < splitList.length; i++) {
-                currentLine += splitList[i][0];
+                if (splitList[i][0] != "\n"){
+                    currentLine += splitList[i][0];
+                }
+                else{
+                    lines.push(currentLine);
+                    currentLine = "";
+                }
             }
             lines.push(currentLine);
         }
-        // Max length is set. Find lines
+        // Max length is set. Set lines
         else {
+            this._targetCanvas.width = this.properties.maxLength;
             for (let i = 0; i < splitList.length; i++) {
-                // Split can fit within line
-                // If not skip
-                if (splitList[i][1] <= remainingLength) {
-                    currentLine += splitList[i][0]; //Add the word / split
-                    remainingLength -= splitList[i][1] // Get remaining space
-                }
-                // No more space
-                // Try character by character
-                else {
-                    let splitString = splitList[i][0]
-                    for (let char = 0; char < splitString.length; char++) {
-                        //find if only characters can fit
-                        let charLength = this._getRenderLength(splitString[char]);
-                        // Character can fit, add it on
-                        if (charLength <= remainingLength) {
-                            currentLine += splitString[char]
-                            remainingLength -= charLength;
-                        } else {
-                            lines.push(currentLine)
-                            currentLine = "";
-                            remainingLength = this.properties.maxLength;
-                            if (charLength <= this.properties.maxLength) {
-                                char--;
+                // No nl characters
+                if (splitList[i][0] != "\n") {
+                    // Split can fit within remaining space?
+                    if (splitList[i][1] <= remainingLength) {
+                        currentLine += splitList[i][0]; //Add the word / split
+                        // Subtract remaining space
+                        remainingLength -= splitList[i][1]
+                    }
+                    // No? Can the word/split if on own line
+                    // If so, make new line and repeat check
+                    else if (splitList[i][1] <= this.properties.maxLength){
+                        lines.push(currentLine);
+                        currentLine = "";
+                        remainingLength = this.properties.maxLength;
+                        i--; // Push loop index back (repeat check)
+                    }
+                    // No more space for split/word
+                    // Try to fit by the character
+                    else {
+
+                        let splitString = splitList[i][0]
+
+                        for (let char = 0; char < splitString.length; char++) {
+                            // Get character length
+                            let charLength = this._getRenderLength(splitString[char]);
+
+                            // Can character fit?
+                            if (charLength <= remainingLength) {
+                                currentLine += splitString[char]
+                                remainingLength -= charLength;
+                            // Character can't fit, make new line
+                            } else {
+                                lines.push(currentLine)
+                                currentLine = "";
+                                remainingLength = this.properties.maxLength;
+
+                                // Infin loop avoid
+                                // Skip character if length boundary is too short
+                                if (charLength <= this.properties.maxLength) {
+                                    char--;
+                                }
                             }
                         }
                     }
+                }
+
+                // \n char hit, add new line
+                else{
+                    lines.push(currentLine);
+                    currentLine = "";
+                    remainingLength = this.properties.maxLength;
                 }
 
             }
@@ -105,6 +149,54 @@ class WebGlText {
             if (currentLine.length > 0) {
                 lines.push(currentLine);
             }
+        }
+
+        // Get the appropriate size of canvas
+        let renderWidth = 0;
+        let renderHeight = 0;
+
+        // Render Width
+        if (this.properties.maxLength == 0) {
+            for (let i = 0; i < lines.length; i++) {
+                let width = this._getRenderLength(lines[i]);
+                if (width > renderWidth) {
+                    renderWidth = width;
+                }
+            }
+        }
+        else{
+            renderWidth = this.properties.maxLength;
+        }
+
+        //Height
+
+        renderHeight = this.FontSize * lines.length;
+
+        this._targetCanvas.width = renderWidth;
+        this._targetCanvas.height = renderHeight;
+
+
+
+        //Set wanted font styles/properties
+        this._canvasContext.fillStyle = this.fillStyle;
+        this._canvasContext.textAlign = this.textAlign;
+        this._canvasContext.font = this.FontSize + "px arial";
+        this._canvasContext.textBaseline = "bottom";
+
+
+        this._canvasContext.beginPath();
+        this._canvasContext.fillStyle = "#aeffed";
+        this._canvasContext.fillRect(0, 0, this._targetCanvas.width, this._targetCanvas.height);
+        this._canvasContext.closePath();
+
+        let lineY = this.FontSize;
+        for (let i = 0; i < lines.length; i++){
+            this._canvasContext.fillStyle = "#000000";
+            this._canvasContext.fillText(lines[i],
+                this._targetCanvas.width / 2,
+                lineY)
+            ;
+            lineY += this.FontSize;
         }
 
         console.log(`Multiline Result: ${lines}`);
@@ -128,6 +220,7 @@ class WebGlText {
         this._canvasContext.fillStyle = this.fillStyle;
         this._canvasContext.textAlign = this.textAlign;
         this._canvasContext.font = this.FontSize + "px arial";
+        this._canvasContext.textBaseline = "bottom";
 
 
         this._canvasContext.beginPath();
@@ -146,7 +239,15 @@ class WebGlText {
 }
 
 let testText = new WebGlText(document.getElementById("TextCanvas"));
-let testString = "これはテストの分です。";
-testText.properties.maxLength = 7;
+let testString = "New Line Text\n" +
+    "This text is in multi-line.\n" +
+    "Does some of the text not fit\n" +
+    "idek..\n" +
+    "Here\n" +
+    "Have\n" +
+    "More\n" +
+    "Lines\n" +
+    "(Kinda mocking it)";
+testText.properties.maxLength = 0;
 testText._splitIntoParts(testString);
 testText._setMultiLineText(testString);
