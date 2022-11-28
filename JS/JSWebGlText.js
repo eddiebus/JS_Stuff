@@ -4,7 +4,7 @@ class WebGlText {
         this._canvasContext = this._targetCanvas.getContext("2d");
         this.TextString = "";
         this.Font = "arial";
-        this.FontSize = 18;
+        this.FontSize = 100;
         this.textAlign = "center";
         this.fillStyle = "#333333";
 
