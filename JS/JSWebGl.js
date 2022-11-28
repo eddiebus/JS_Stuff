@@ -359,6 +359,7 @@ void main() {
     }
 }
 
+// 2D Camera Class
 class JSWebGlCamera {
     constructor(WebGlContext) {
         this.transform = new TransForm();
@@ -378,7 +379,49 @@ class JSWebGlCamera {
         this._updateMatrix();
     }
 
-    // Update matrix's when values change
+    _getInverseMatrix() {
+        this._updateMatrix();
+
+        let _invertProjMatrix = mat4.create();
+        let _invertViewMatrix = mat4.create();
+        let returnMatrix = mat4.create();
+
+        mat4.invert(
+            _invertProjMatrix,
+            this._projectionMatrix
+        );
+
+        mat4.invert(
+            _invertProjMatrix,
+            this._projectionMatrix
+        );
+
+        mat4.multiply(
+            returnMatrix,
+            _invertViewMatrix,
+            _invertProjMatrix
+        );
+
+        return returnMatrix;
+    }
+
+    screenToWorld(screenPoint){
+        let returnVector = vec4.create();
+        let iMatrix = this._getInverseMatrix();
+        vec4.transformMat4(
+            returnVector,
+            [
+                screenPoint[0],
+                screenPoint[1],
+                0,
+                0
+            ],
+            this._getInverseMatrix()
+        );
+
+        return returnVector;
+    }
+    // Update matrices (case base value changed)
     _updateMatrix() {
         let cWidth = this.Size[0];
         let cHeight = this.Size[1];
@@ -395,10 +438,6 @@ class JSWebGlCamera {
         this._viewMatrix = this.transform.GetTransformMatrix();
     }
 
-    setPosition(webGlVector) {
-        this.transform.position = webGlVector;
-        this._updateMatrix();
-    }
 
     setToShader(WebGlShaderProgram) {
         this._updateMatrix();
@@ -539,11 +578,11 @@ MyWebGlContext.resolutionScale = 2;
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
+myCamera._getInverseMatrix();
 let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,0.5,1));
 let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
 
-
-
+let touchSquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,1,0.2));
 
 let rotationVector = new WebGlVector3(0,0,0);
 
@@ -555,12 +594,14 @@ function loop() {
 
     if (MyWebGlContext.isFullscreen) {
         let speed = 2;
-        let touchSpeed = 0.8;
+        let touchSpeed = 1;
 
         if (testCanvas_TouchInput.touch[0].isPressed) {
+            let touchObj = testCanvas_TouchInput.touch[0];
             let touchDisVector = testCanvas_TouchInput.touch[0].distanceVector;
             let moveVector = [touchDisVector[0],touchDisVector[1]];
-            let moveRange = 50;
+            let moveRange = 0.5;
+
             for (let i = 0; i < moveVector.length; i++) {
                 let newValue = moveVector[i];
                 if (moveVector[i] > moveRange){
@@ -573,7 +614,7 @@ function loop() {
                 newValue = newValue/moveRange;
                 moveVector[i] = newValue;
             }
-            console.log(`Distance from touch = ${testCanvas_TouchInput.touch[0].distanceVector}`);
+
 
 
             mySquare.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
@@ -581,6 +622,19 @@ function loop() {
 
             mySquare2.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
             mySquare2.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
+
+            let touchPos =  [touchObj.endPos[0],touchObj.startPos[1]];
+            let touchPosWorld = myCamera.screenToWorld(touchObj.startPos);
+
+            touchSquare.transform.position = touchPosWorld;
+            touchSquare.transform.position[2] = -2;
+
+            console.log(
+                myCamera.screenToWorld(touchObj.endPos)
+            )
+            console.log(
+                mySquare2.transform.position
+            )
         }
 
         if (testCanvas_TouchInput.touch[1].isPressed){
@@ -610,6 +664,9 @@ function loop() {
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.rotation[2] = rotationVector.z;
+
+    touchSquare.transform.scale = [200,200,200,1];
+
     mySquare2.transform.scale = [200,200,200,1];
     mySquare.transform.scale = [150,150,150,1];
     mySquare2.transform.position[2] = -10
@@ -621,6 +678,12 @@ function loop() {
     myCamera.setToShader(myShaderProgram);
     mySquare2.draw(myShaderProgram);
     mySquare.draw(myShaderProgram);
+
+
+    if (testCanvas_TouchInput.touch[0].isPressed) {
+        touchSquare.draw(myShaderProgram);
+    }
+
     window.requestAnimationFrame(() => {
         loop();
     })

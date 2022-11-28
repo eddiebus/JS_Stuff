@@ -36,6 +36,7 @@ class JSGameTouch {
         this.startPos = [0,0]; //Start point of touch
         this._lastPos = [0,0]; //Last point in previous frame
         this.endPos = [0,0]; //End point of touch
+        this.normalisedEndPog = [0,0];
         this.distanceVector = [0,0];
         this.dirVector = [0,0]; //Direction vector of touch
 
@@ -89,21 +90,19 @@ class JSGameTouch {
             this._targetElementRect = this._targetElement.getBoundingClientRect();
 
             let x = myTouch.pageX - this._targetElementRect.left;
-            let y = myTouch.pageY - this._targetElementRect.top;
+            x -= this._targetElementRect.width / 2;
+            x /= this._targetElementRect.width / 2
+            let y = this._targetElementRect.height -  (myTouch.pageY - this._targetElementRect.top);
+            y -= this._targetElementRect.height/2;
+            y /= this._targetElementRect.height/2;
 
-            if (x > this._targetElementRect.width) { x = this._targetElementRect.width; }
-            else if (x < 0 ) { x = 0;}
 
-            if (y > this._targetElementRect.height) { y = this._targetElementRect.height; }
-            else if (y < 0 ) { y = 0;}
-
-            y = this._targetElementRect.height - y;
-            
             this.startPos = [x,y];
             this.endPos = [x,y];
             this.Down = true;
             this.isPressed = true;
             this._Frames = 0;
+            this.distanceVector = [0,0];
         }
     }
 
@@ -116,15 +115,11 @@ class JSGameTouch {
             this._targetElementRect = this._targetElement.getBoundingClientRect();
 
             let x = myTouch.pageX - this._targetElementRect.left;
-            let y = myTouch.pageY - this._targetElementRect.top;
-
-            if (x > this._targetElementRect.width) { x = this._targetElementRect.width; }
-            else if (x < 0 ) { x = 0;}
-
-            if (y > this._targetElementRect.height) { y = this._targetElementRect.height; }
-            else if (y < 0 ) { y = 0;}
-
-            y = this._targetElementRect.height - y;
+            x -= this._targetElementRect.width / 2;
+            x /= this._targetElementRect.width / 2;
+            let y = this._targetElementRect.height -  (myTouch.pageY - this._targetElementRect.top);
+            y -= this._targetElementRect.height/2;
+            y /= this._targetElementRect.height/2;
 
             this.endPos = [x,y];
 
@@ -132,6 +127,7 @@ class JSGameTouch {
                 this.endPos[0] - this._lastPos[0],
                 this.endPos[1] - this._lastPos[1]
             ]
+
 
             this.distanceVector = [
                 this.endPos[0] - this.startPos[0],
