@@ -184,6 +184,8 @@ class WebGlContext {
             this._setResolution(screen.width * this.resolutionScale,screen.height * this.resolutionScale);
         }
         else {
+            screen.orientation.unlock();
+
             let clientRect = this._canvas.getBoundingClientRect();
             this._setResolution(
                 clientRect.width * this.resolutionScale,
