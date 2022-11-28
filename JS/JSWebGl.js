@@ -543,6 +543,8 @@ let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,0.5,1));
 let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
 
 
+
+
 let rotationVector = new WebGlVector3(0,0,0);
 
 
@@ -557,7 +559,7 @@ function loop() {
 
         if (testCanvas_TouchInput.touch[0].isPressed) {
             let touchDisVector = testCanvas_TouchInput.touch[0].distanceVector;
-            let moveVector = [touchDisVector];
+            let moveVector = [touchDisVector[0],touchDisVector[1]];
             let moveRange = 50;
             for (let i = 0; i < moveVector.length; i++) {
                 let newValue = moveVector[i];
@@ -572,6 +574,7 @@ function loop() {
                 moveVector[i] = newValue;
             }
             console.log(`Distance from touch = ${testCanvas_TouchInput.touch[0].distanceVector}`);
+
 
             mySquare.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
             mySquare.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
