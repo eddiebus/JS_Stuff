@@ -540,7 +540,7 @@ MyWebGlContext.resolutionScale = 2;
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
 let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,0.5,1));
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
 
 
 
