@@ -1,14 +1,17 @@
-precision mediump float;
-varying vec4 vColour;
+precision highp float;
+
+varying   vec4 vColour;
+varying   vec2 vTextCoord;
+
+uniform int toTexture;
+uniform sampler2D vTexture;
 
 void main() {
-    if (vColour.a < 0.1){
-        discard;
-    }
-    else
-    {
-        gl_FragColor.r = vColour.r;
-        gl_FragColor.g = vColour.g;
-        gl_FragColor.b = vColour.b;
-    }
+        if (toTexture <= 0){
+            gl_FragColor = vec4(vColour.rgb * vColour.a, vColour.a);
+        }
+        else{
+            vec4 cSample = texture2D(vTexture,vTextCoord);
+            gl_FragColor = cSample;
+        }
 }

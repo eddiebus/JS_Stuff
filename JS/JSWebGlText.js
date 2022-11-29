@@ -1,7 +1,12 @@
 class WebGlText {
-    constructor(HTMLCanvas) {
+    constructor(WebGlContext,HTMLCanvas) {
+        this.Transform = new TransForm();
         this._targetCanvas = HTMLCanvas;
+        this._parentContext = WebGlContext;
         this._canvasContext = this._targetCanvas.getContext("2d");
+        this._TextTexture = new JSWebGlCanvasTexture(this._parentContext,this._targetCanvas);;
+        this._RenderSquare = new JSWebGlSquare(WebGlContext,new WebGlVector4(1,1,1,0.8));
+
         this.TextString = "";
         this.Font = "arial";
         this.FontSize = 100;
@@ -169,25 +174,16 @@ class WebGlText {
         }
 
         //Height
-
         renderHeight = this.FontSize * lines.length;
 
         this._targetCanvas.width = renderWidth;
         this._targetCanvas.height = renderHeight;
-
-
 
         //Set wanted font styles/properties
         this._canvasContext.fillStyle = this.fillStyle;
         this._canvasContext.textAlign = this.textAlign;
         this._canvasContext.font = this.FontSize + "px arial";
         this._canvasContext.textBaseline = "bottom";
-
-
-        this._canvasContext.beginPath();
-        this._canvasContext.fillStyle = "#aeffed";
-        this._canvasContext.fillRect(0, 0, this._targetCanvas.width, this._targetCanvas.height);
-        this._canvasContext.closePath();
 
         let lineY = this.FontSize;
         for (let i = 0; i < lines.length; i++){
@@ -199,8 +195,7 @@ class WebGlText {
             lineY += this.FontSize;
         }
 
-        console.log(`Multiline Result: ${lines}`);
-
+        this._TextTexture.updateTexture();
     }
 
     _setText(newString) {
@@ -236,18 +231,161 @@ class WebGlText {
 
         console.log(this._targetCanvas.width);
     }
+
+    draw(WebGlShaderProgram){
+        this._RenderSquare.transform = this.Transform;
+        this._RenderSquare.draw(WebGlShaderProgram);
+    }
 }
 
-let testText = new WebGlText(document.getElementById("TextCanvas"));
-let testString = "New Line Text\n" +
-    "This text is in multi-line.\n" +
-    "Does some of the text not fit\n" +
-    "idek..\n" +
-    "Here\n" +
-    "Have\n" +
-    "More\n" +
-    "Lines\n" +
-    "(Kinda mocking it)";
-testText.properties.maxLength = 0;
-testText._splitIntoParts(testString);
-testText._setMultiLineText(testString);
+
+// Testing
+let testCanvas = document.getElementById("Canvas");
+let testCanvas_MouseInput = new JSGameMouseInput(testCanvas);
+testCanvas_MouseInput.locked = false;
+
+let testCanvas_TouchInput = new JSGameTouchInput(testCanvas);
+let MyWebGlContext = new WebGlContext(testCanvas);
+
+
+MyWebGlContext.setCanFullScreen(true);
+MyWebGlContext.resolutionScale = 1;
+
+let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
+let myCamera = new JSWebGlCamera(MyWebGlContext);
+myCamera._getInverseMatrix();
+
+let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,0.5,1));
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
+let TextSquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
+
+let touchSquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,1,0.2));
+let touchSquareMid = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
+
+let rotationVector = new WebGlVector3(0,0,0);
+
+let TestWebGlText = new WebGlText(MyWebGlContext,document.getElementById("TextCanvas"));
+let testString = "This is Some WebGL Text";
+TestWebGlText.properties.maxLength = 0;
+TestWebGlText._setMultiLineText(testString);
+TestWebGlText._setMultiLineText(testString);
+TestWebGlText._setMultiLineText(testString);
+
+let CanvasTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.getElementById("TextCanvas"));
+
+
+function loop() {
+
+    if (JSGameInput.GetKey("e").Press) {
+        rotationVector.z += Time.deltaTime * 0.3;
+    }
+
+    if (MyWebGlContext.isFullscreen) {
+        let speed = 2;
+        let touchSpeed = 1;
+
+        if (testCanvas_TouchInput.touch[0].isPressed) {
+            let touchObj = testCanvas_TouchInput.touch[0];
+            let touchDisVector = testCanvas_TouchInput.touch[0].distanceVector;
+            let moveVector = [touchDisVector[0],touchDisVector[1]];
+            let moveRange = 0.10;
+
+            for (let i = 0; i < moveVector.length; i++) {
+                let newValue = moveVector[i];
+                if (moveVector[i] > moveRange){
+                    newValue = moveRange;
+                }
+                else if (moveVector[i] < -moveRange){
+                    newValue = -moveRange
+                }
+
+                newValue = newValue/moveRange;
+                moveVector[i] = newValue;
+            }
+
+            mySquare.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
+            mySquare.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
+
+            mySquare2.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
+            mySquare2.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
+
+            let touchPos =  [touchObj.endPos[0],touchObj.startPos[1]];
+            let touchPosWorld = myCamera.screenToWorld(touchObj.startPos);
+
+            touchSquare.transform.position = touchPosWorld;
+            touchSquare.transform.position[2] = -2;
+
+            touchSquareMid.transform.position = touchPosWorld;
+            touchSquareMid.transform.position[2] = -1;
+
+            console.log(
+                myCamera.screenToWorld(touchObj.endPos)
+            )
+            console.log(
+                mySquare2.transform.position
+            )
+        }
+
+        if (testCanvas_TouchInput.touch[1].isPressed){
+            rotationVector.z += Time.deltaTime;
+        }
+
+        if (JSGameInput.GetKey("w").Press){
+            mySquare.transform.position[1] += Time.deltaTime * speed;
+            mySquare2.transform.position[1] += Time.deltaTime * speed;
+        }
+        else if (JSGameInput.GetKey("s").Press){
+            mySquare.transform.position[1] -= Time.deltaTime * speed;
+            mySquare2.transform.position[1] -= Time.deltaTime * speed;
+        }
+
+        if (JSGameInput.GetKey("a").Press){
+            mySquare.transform.position[0] -= Time.deltaTime * speed;
+            mySquare2.transform.position[0] -= Time.deltaTime * speed;
+        }
+        else if (JSGameInput.GetKey("d").Press){
+            mySquare.transform.position[0] += Time.deltaTime * speed;
+            mySquare2.transform.position[0] += Time.deltaTime * speed;
+        }
+    }
+
+    MyWebGlContext.clear(new WebGlVector4(0,1,1,1));
+
+    myShaderProgram.use();
+    mySquare.transform.rotation[2] = rotationVector.z;
+    mySquare2.transform.rotation[2] = rotationVector.z;
+
+    touchSquare.transform.scale = [200,200,200,1];
+    touchSquareMid.transform.scale = [50,50,50,1];
+
+    mySquare2.transform.scale = [200,200,1,1];
+    mySquare.transform.scale = [150,150,1,1];
+    mySquare2.transform.position[2] = -10
+    mySquare.transform.position[2] = -5
+
+    TestWebGlText.Transform.position = [0,0,-20];
+    TestWebGlText.Transform.scale = [testCanvas.width,300,1,0];
+    TextSquare.transform = TestWebGlText.Transform;
+
+    myCamera.Size = [testCanvas.width,testCanvas.height];
+    myCamera.transform.position = [0,0,-10];
+
+    myCamera.setToShader(myShaderProgram);
+    TextSquare.setTexture(TestWebGlText._TextTexture);
+    TextSquare.draw(myShaderProgram);
+
+    mySquare2.draw(myShaderProgram);
+    mySquare.draw(myShaderProgram);
+
+
+    if (testCanvas_TouchInput.touch[0].isPressed) {
+        touchSquareMid.draw(myShaderProgram);
+        touchSquare.draw(myShaderProgram);
+    }
+
+    window.requestAnimationFrame(() => {
+        loop();
+    })
+}
+
+loop()

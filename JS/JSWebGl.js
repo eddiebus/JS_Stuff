@@ -133,8 +133,7 @@ class TransForm {
     }
 }
 
-
-// WebGl Context is Linked to HTML Canas
+// WebGl Context is Linked to HTML Canvas
 class WebGlContext {
     constructor(HTMLCanvas) {
         this._canvasContext = HTMLCanvas.getContext("webgl", {
@@ -194,8 +193,8 @@ class WebGlContext {
     }
 
     _setResolution(width, height) {
-        this._canvas.width = width;
-        this._canvas.height = height;
+        this._canvas.width = Math.round(width);
+        this._canvas.height = Math.round(height);
         this._canvasContext.viewport(0, 0, width, height);
     }
 
@@ -259,7 +258,10 @@ class JSWebGLShaderProgram {
         this.vShaderCode = `
 attribute vec3 coordinates;
 attribute vec4 colour;
-varying  vec4 vColour;
+attribute vec2 texCoord;
+
+varying   vec4 vColour;
+varying   vec2 vTextCoord;
 
 uniform mat4 WorldMatrix;
 uniform mat4 ViewMatrix;
@@ -268,17 +270,28 @@ uniform mat4 uProjectionMatrix;
 void main(void) {
     gl_Position =   uProjectionMatrix * ViewMatrix * WorldMatrix *  vec4(coordinates, 1.0);
     vColour = colour;
+    vTextCoord = texCoord;
 }
         `
         this.fragShaderCode = `
-precision mediump float;
-varying vec4 vColour;
+precision highp float;
+
+varying   vec4 vColour;
+varying   vec2 vTextCoord;
+
+uniform int toTexture;
+uniform sampler2D vTexture;
 
 void main() {
-        gl_FragColor = vec4(vColour.rgb * vColour.a, vColour.a);
+        if (toTexture <= 0){
+            gl_FragColor = vec4(vColour.rgb * vColour.a, vColour.a);
+        }
+        else{
+            vec4 cSample = texture2D(vTexture,vTextCoord);
+            gl_FragColor = cSample;
+        }
 }
 `
-
         this.vShader = WebGlContext.createVertexShader(this.vShaderCode);
         this.fragShader = WebGlContext.createFragmentShader(this.fragShaderCode);
 
@@ -297,12 +310,15 @@ void main() {
             program: this._shaderProgram,
             attribLocations: {
                 vertexPosition: this._parentContext.getAttribLocation(this._shaderProgram, 'coordinates'),
-                colour: this._parentContext.getAttribLocation(this._shaderProgram, 'colour')
+                colour: this._parentContext.getAttribLocation(this._shaderProgram, 'colour'),
+                textureCoord: this._parentContext.getAttribLocation(this._shaderProgram, 'texCoord')
             },
             uniformLocations: {
                 projectionMatrix: this._parentContext.getUniformLocation(this._shaderProgram, 'uProjectionMatrix'),
                 viewMatrix: this._parentContext.getUniformLocation(this._shaderProgram, 'ViewMatrix'),
-                worldMatrix: this._parentContext.getUniformLocation(this._shaderProgram, 'WorldMatrix')
+                worldMatrix: this._parentContext.getUniformLocation(this._shaderProgram, 'WorldMatrix'),
+                toTexture: this._parentContext.getUniformLocation(this._shaderProgram, 'toTexture'),
+                Texture: this._parentContext.getUniformLocation(this._shaderProgram, 'vTexture')
             }
         }
     }
@@ -336,6 +352,10 @@ void main() {
         );
     }
 
+    setTexturing(intBool){
+        this._parentContext.uniform1i(this._shaderInputLayout.uniformLocations.toTexture,intBool);
+    }
+
     // Set Vertex and index Buffer
     setVertexIndexBuffer(vBuffer, indexBuffer){
         this._parentContext.bindBuffer(
@@ -358,6 +378,53 @@ void main() {
         this._parentContext.enableVertexAttribArray(
             this._shaderInputLayout.attribLocations.vertexPosition
         );
+    }
+}
+
+class JSWebGlCanvasTexture{
+    constructor(WebGlContext,HTMLCanvas) {
+        this._parentContext = WebGlContext;
+        this._canvas = HTMLCanvas
+        this.Texture = this._parentContext._canvasContext.createTexture();
+
+        this.updateTexture();
+    }
+
+    updateTexture(){
+        this._parentContext._canvasContext.bindTexture(this._parentContext._canvasContext.TEXTURE_2D,this.Texture);
+
+        this._parentContext._canvasContext.texImage2D(
+            this._parentContext._canvasContext.TEXTURE_2D,
+            0, //level
+            this._parentContext._canvasContext.RGBA, //internal Format
+            this._parentContext._canvasContext.RGBA, //format (ignore this)
+            this._parentContext._canvasContext.UNSIGNED_BYTE, //Type
+            this._canvas //Pixel Source
+        );
+
+        this._parentContext._canvasContext.texParameteri(
+            this._parentContext._canvasContext.TEXTURE_2D,
+            this._parentContext._canvasContext.TEXTURE_MIN_FILTER,
+            this._parentContext._canvasContext.LINEAR)
+
+        //Prevent texture wrapping
+
+        // S - coord
+        this._parentContext._canvasContext.texParameteri(
+            this._parentContext._canvasContext.TEXTURE_2D,
+            this._parentContext._canvasContext.TEXTURE_WRAP_S,
+            this._parentContext._canvasContext.CLAMP_TO_EDGE
+        );
+
+        // T - coord
+        this._parentContext._canvasContext.texParameteri(
+            this._parentContext._canvasContext.TEXTURE_2D,
+            this._parentContext._canvasContext.TEXTURE_WRAP_T,
+            this._parentContext._canvasContext.CLAMP_TO_EDGE
+        );
+
+        // Done Texture Work, Unbind texture
+        this._parentContext._canvasContext.bindTexture(this._parentContext._canvasContext.TEXTURE_2D,null);
     }
 }
 
@@ -425,8 +492,8 @@ class JSWebGlCamera {
     }
     // Update matrices (case base value changed)
     _updateMatrix() {
-        let cWidth = this.Size[0];
-        let cHeight = this.Size[1];
+        let cWidth = Math.round(this.Size[0]);
+        let cHeight = Math.round(this.Size[1]);
 
         mat4.ortho(
             this._projectionMatrix,
@@ -439,7 +506,6 @@ class JSWebGlCamera {
         );
         this._viewMatrix = this.transform.GetTransformMatrix();
     }
-
 
     setToShader(WebGlShaderProgram) {
         this._updateMatrix();
@@ -457,6 +523,7 @@ class JSWebGlSquare {
      */
     constructor(WebGlContext,c) {
         this._parentContext = WebGlContext._canvasContext;
+        this.WebGlTexture = null;
         this.transform = new TransForm();
 
         this._WorldMatrix = mat4.create();
@@ -468,13 +535,21 @@ class JSWebGlSquare {
 
         this._vertexBuffer = this._parentContext.createBuffer();
         this._indexBuffer = this._parentContext.createBuffer();
+        this._texCoordBuffer = this._parentContext.createBuffer();
         this._colourBuffer = this._parentContext.createBuffer();
 
         let vertices = [
-            -1, 1, 0.0,
-            1, 1, 0.0,
-            -1, -1, 0.0,
-            1, -1, 0.0,
+            -1.0, 1.0, 0.0,
+            1.0, 1.0, 0.0,
+            -1.0, -1.0, 0.0,
+            1.0, -1.0, 0.0,
+        ];
+
+        let textureCoord = [
+            0.0,0.0,
+            1.0,0.0,
+            0.0,1.0,
+            1.0,1.0
         ];
 
         let indices = [0, 1, 2, 1, 2, 3];
@@ -521,7 +596,7 @@ class JSWebGlSquare {
         );
 
 
-        //write colour points
+        // write colour points
         this._parentContext.bindBuffer(
             this._parentContext.ARRAY_BUFFER,
             this._colourBuffer
@@ -537,7 +612,29 @@ class JSWebGlSquare {
             this._parentContext.ARRAY_BUFFER,
             null
         );
+
+        // write texCoords
+        this._parentContext.bindBuffer(
+          this._parentContext.ARRAY_BUFFER,
+          this._texCoordBuffer
+        );
+
+        this._parentContext.bufferData(
+            this._parentContext.ARRAY_BUFFER,
+            new Float32Array(textureCoord),
+            this._parentContext.STATIC_DRAW
+        );
+
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            null
+        );
     }
+
+    setTexture(Texture){
+        this.WebGlTexture = Texture;
+    }
+
     // Draw - Draw with given shader. Shader should be bound to same context
     draw(WebGlShaderProgram) {
         WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer,this._indexBuffer);
@@ -554,9 +651,41 @@ class JSWebGlSquare {
             this._parentContext.FLOAT,
             false,0,0
         );
-        this._parentContext.enableVertexAttribArray(WebGlShaderProgram._shaderInputLayout.attribLocations.colour)
+        this._parentContext.enableVertexAttribArray(
+            WebGlShaderProgram._shaderInputLayout.attribLocations.colour
+        );
+
+        // Bind Tex Coord
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            this._texCoordBuffer
+        );
+
+        this._parentContext.vertexAttribPointer(
+            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord,
+            2,
+            this._parentContext.FLOAT,
+            false,0,0
+        );
+        this._parentContext.enableVertexAttribArray(
+            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord
+        );
 
         WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
+
+        if (!this.WebGlTexture){
+            WebGlShaderProgram.setTexturing(0);
+        }
+        else{
+            WebGlShaderProgram.setTexturing(1);
+
+            this._parentContext.activeTexture(this._parentContext.TEXTURE0);
+
+            this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.WebGlTexture.Texture);
+
+            this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
+        }
+
         this._parentContext.drawElements(
             this._parentContext.TRIANGLES,
             this._indexCount,
@@ -564,138 +693,6 @@ class JSWebGlSquare {
     }
 }
 
-// Testing
-let TextContext = document.createElement('canvas');
-console.log(TextContext);
-
-let testCanvas = document.getElementById("Canvas");
-let testCanvas_MouseInput = new JSGameMouseInput(testCanvas);
-testCanvas_MouseInput.locked = false;
-
-let testCanvas_TouchInput = new JSGameTouchInput(testCanvas);
-let MyWebGlContext = new WebGlContext(testCanvas);
-
-MyWebGlContext.setCanFullScreen(true);
-MyWebGlContext.resolutionScale = 2;
-
-let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
-let myCamera = new JSWebGlCamera(MyWebGlContext);
-myCamera._getInverseMatrix();
-let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,0.5,1));
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
-
-let touchSquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,1,0.2));
-let touchSquareMid = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
-
-let rotationVector = new WebGlVector3(0,0,0);
 
 
-function loop() {
-    if (JSGameInput.GetKey("e").Press) {
-        rotationVector.z += Time.deltaTime * 0.3;
-    }
-
-    if (MyWebGlContext.isFullscreen) {
-        let speed = 2;
-        let touchSpeed = 1;
-
-        if (testCanvas_TouchInput.touch[0].isPressed) {
-            let touchObj = testCanvas_TouchInput.touch[0];
-            let touchDisVector = testCanvas_TouchInput.touch[0].distanceVector;
-            let moveVector = [touchDisVector[0],touchDisVector[1]];
-            let moveRange = 0.10;
-
-            for (let i = 0; i < moveVector.length; i++) {
-                let newValue = moveVector[i];
-                if (moveVector[i] > moveRange){
-                    newValue = moveRange;
-                }
-                else if (moveVector[i] < -moveRange){
-                    newValue = -moveRange
-                }
-
-                newValue = newValue/moveRange;
-                moveVector[i] = newValue;
-            }
-
-
-
-            mySquare.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
-            mySquare.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
-
-            mySquare2.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
-            mySquare2.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
-
-            let touchPos =  [touchObj.endPos[0],touchObj.startPos[1]];
-            let touchPosWorld = myCamera.screenToWorld(touchObj.startPos);
-
-            touchSquare.transform.position = touchPosWorld;
-            touchSquare.transform.position[2] = -2;
-
-            touchSquareMid.transform.position = touchPosWorld;
-            touchSquareMid.transform.position[2] = -1;
-
-            console.log(
-                myCamera.screenToWorld(touchObj.endPos)
-            )
-            console.log(
-                mySquare2.transform.position
-            )
-        }
-
-        if (testCanvas_TouchInput.touch[1].isPressed){
-            rotationVector.z += Time.deltaTime;
-        }
-
-        if (JSGameInput.GetKey("w").Press){
-            mySquare.transform.position[1] += Time.deltaTime * speed;
-            mySquare2.transform.position[1] += Time.deltaTime * speed;
-        }
-        else if (JSGameInput.GetKey("s").Press){
-            mySquare.transform.position[1] -= Time.deltaTime * speed;
-            mySquare2.transform.position[1] -= Time.deltaTime * speed;
-        }
-
-        if (JSGameInput.GetKey("a").Press){
-            mySquare.transform.position[0] -= Time.deltaTime * speed;
-            mySquare2.transform.position[0] -= Time.deltaTime * speed;
-        }
-        else if (JSGameInput.GetKey("d").Press){
-            mySquare.transform.position[0] += Time.deltaTime * speed;
-            mySquare2.transform.position[0] += Time.deltaTime * speed;
-        }
-    }
-
-    MyWebGlContext.clear(new WebGlVector4(0,1,1,1));
-    myShaderProgram.use();
-    mySquare.transform.rotation[2] = rotationVector.z;
-    mySquare2.transform.rotation[2] = rotationVector.z;
-
-    touchSquare.transform.scale = [200,200,200,1];
-    touchSquareMid.transform.scale = [50,50,50,1];
-
-    mySquare2.transform.scale = [200,200,200,1];
-    mySquare.transform.scale = [150,150,150,1];
-    mySquare2.transform.position[2] = -10
-    mySquare.transform.position[2] = -5
-
-
-    myCamera.Size = [testCanvas.width,testCanvas.height];
-    myCamera.transform.position = [0,0,-10];
-    myCamera.setToShader(myShaderProgram);
-    mySquare2.draw(myShaderProgram);
-    mySquare.draw(myShaderProgram);
-
-
-    if (testCanvas_TouchInput.touch[0].isPressed) {
-        touchSquareMid.draw(myShaderProgram);
-        touchSquare.draw(myShaderProgram);
-    }
-
-    window.requestAnimationFrame(() => {
-        loop();
-    })
-}
-
-loop()
 
