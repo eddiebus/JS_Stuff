@@ -1,7 +1,7 @@
 class WebGlText {
-    constructor(WebGlContext,HTMLCanvas) {
+    constructor(WebGlContext) {
         this.Transform = new TransForm();
-        this._targetCanvas = HTMLCanvas;
+        this._targetCanvas = document.createElement("canvas");
         this._parentContext = WebGlContext;
         this._canvasContext = this._targetCanvas.getContext("2d");
         this._TextTexture = new JSWebGlCanvasTexture(this._parentContext,this._targetCanvas);;
@@ -163,7 +163,7 @@ class WebGlText {
         // Render Width
         if (this.properties.maxLength == 0) {
             for (let i = 0; i < lines.length; i++) {
-                let width = this._getRenderLength(lines[i]);
+                let width = this._getRenderLength(lines[i]) ;
                 if (width > renderWidth) {
                     renderWidth = width;
                 }
@@ -190,7 +190,8 @@ class WebGlText {
             this._canvasContext.fillStyle = "#000000";
             this._canvasContext.fillText(lines[i],
                 this._targetCanvas.width / 2,
-                lineY)
+                lineY,
+                this._targetCanvas.width * 0.95)
             ;
             lineY += this.FontSize;
         }
@@ -233,6 +234,7 @@ class WebGlText {
     }
 
     draw(WebGlShaderProgram){
+        this._RenderSquare.setTexture(this._TextTexture);
         this._RenderSquare.transform = this.Transform;
         this._RenderSquare.draw(WebGlShaderProgram);
     }
@@ -264,14 +266,14 @@ let touchSquareMid = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1))
 
 let rotationVector = new WebGlVector3(0,0,0);
 
-let TestWebGlText = new WebGlText(MyWebGlContext,document.getElementById("TextCanvas"));
+let TestWebGlText = new WebGlText(MyWebGlContext);
 let testString = "This is Some WebGL Text";
-TestWebGlText.properties.maxLength = 0;
+TestWebGlText.properties.maxLength = testCanvas.width;
+TestWebGlText.FontSize = testCanvas.height * 0.1
 TestWebGlText._setMultiLineText(testString);
 TestWebGlText._setMultiLineText(testString);
 TestWebGlText._setMultiLineText(testString);
 
-let CanvasTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.getElementById("TextCanvas"));
 
 
 function loop() {
@@ -372,7 +374,7 @@ function loop() {
 
     myCamera.setToShader(myShaderProgram);
     TextSquare.setTexture(TestWebGlText._TextTexture);
-    TextSquare.draw(myShaderProgram);
+    TestWebGlText.draw(myShaderProgram);
 
     mySquare2.draw(myShaderProgram);
     mySquare.draw(myShaderProgram);
