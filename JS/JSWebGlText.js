@@ -267,7 +267,7 @@ let touchSquareMid = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1))
 let rotationVector = new WebGlVector3(0,0,0);
 
 let TestWebGlText = new WebGlText(MyWebGlContext);
-let testString = "This is Some WebGL Text";
+let testString = "日本語でテクストを書けるのか？";
 TestWebGlText.properties.maxLength = testCanvas.width;
 TestWebGlText.FontSize = testCanvas.height * 0.1
 TestWebGlText._setMultiLineText(testString);
