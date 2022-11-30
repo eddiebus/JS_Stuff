@@ -1,5 +1,5 @@
 function DegToRadians(valueDeg) {
-    return valueDeg * Math.PI / 180.0;
+    return valueDeg * (Math.PI / 180.0);
 }
 
 class WebGlVector3 {
@@ -663,7 +663,7 @@ class JSWebGlCircle {
 
         let sections = 10; //How many sections of the circle
         // How large are the sections
-        let gapSize = 360.0 / sections;
+        let gapSize = DegToRadians(360/sections);
 
         // Add center point
         vertices.push(0);
@@ -677,14 +677,14 @@ class JSWebGlCircle {
 
         // Add points around center
         // Add indecies
-        for (let i = 0; i < sections; i++) {
+        for (let i = 0; i < 360; i++) {
 
-            let startAngle = (i) * gapSize;
-            let endAngle = (i + 1) * gapSize;
+            let startAngle = i * gapSize;
+            let endAngle = startAngle + gapSize;
 
             // Start Angle + Extend
-            vertices.push(Math.sin(startAngle) * radius);
             vertices.push(Math.cos(startAngle) * radius);
+            vertices.push(Math.sin(startAngle) * radius);
             vertices.push(0);
 
             vColours.push(colour[0]);
@@ -693,8 +693,8 @@ class JSWebGlCircle {
             vColours.push(colour[3]);
 
             // End Angle + Extend
-            vertices.push(Math.sin(endAngle) * radius);
             vertices.push(Math.cos(endAngle) * radius);
+            vertices.push(Math.sin(endAngle) * radius);
             vertices.push(0);
 
             vColours.push(colour[0]);
@@ -706,12 +706,14 @@ class JSWebGlCircle {
             //Add indices
             indices.push(0); // Starting point
             indices.push(1 + i); //Start Angle Point
-            indices.push(1 + (i + 1)); //End Angle Point
+            indices.push(i + 2); //End Angle Point
         }
 
         this.vCount = vertices.length / 3;
         console.log(`This circle has ${this.vCount} vertices`);
+        console.log(`This circle has ${sections} sections`);
         this._indexCount = indices.length;
+
 
         // write points to buffer
         this._parentContext.bindBuffer(
