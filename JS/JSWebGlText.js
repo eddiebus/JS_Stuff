@@ -375,7 +375,6 @@ function loop() {
     myCamera.transform.position = [0,0,-10];
 
 
-
     myCamera.setToShader(myShaderProgram);
     myCircle.draw(myShaderProgram);
     TextSquare.setTexture(TestWebGlText._TextTexture);
