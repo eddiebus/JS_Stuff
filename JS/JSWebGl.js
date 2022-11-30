@@ -658,7 +658,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 360/2; //How many sections of the circle
+        let sections = 10; //How many sections of the circle
         // How large are the sections
         let gapSize = DegToRadians(360/sections);
 
@@ -676,7 +676,7 @@ class JSWebGlCircle {
 
         // Add points around center
         // Add indecies
-        for (let i = 0; i < sections; i++) {
+        for (let i = 0; i <= sections; i++) {
             let startAngle = i * gapSize;
             let endAngle = startAngle + gapSize;
 
@@ -690,20 +690,6 @@ class JSWebGlCircle {
             vColours.push(colour[2]);
             vColours.push(colour[3]);
 
-            // End Angle + Extend
-            vertices.push(Math.cos(endAngle) * radius);
-            vertices.push(Math.sin(endAngle) * radius);
-            vertices.push(0);
-
-            vColours.push(colour[0]);
-            vColours.push(colour[1]);
-            vColours.push(colour[2]);
-            vColours.push(colour[3]);
-
-            //Add indices
-            indices.push((i *3)); // Starting point
-            indices.push((i * 3)+1); //Start Angle Point
-            indices.push((i *3) + 2); //End Angle Point
         }
 
         this.vCount = vertices.length / 3;
@@ -783,10 +769,11 @@ class JSWebGlCircle {
         WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
         WebGlShaderProgram.setTexturing(0);
 
-        this._parentContext.drawElements(
+        this._parentContext.drawArrays(
             this._parentContext.TRIANGLE_FAN,
-            this._indexCount,
-            this._parentContext.UNSIGNED_SHORT, 0);
+            0,
+            this.vCount
+        );
     }
 }
 
