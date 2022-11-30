@@ -369,7 +369,7 @@ function loop() {
     TextSquare.transform = TestWebGlText.Transform;
 
     myCircle.transform.position = [0,0,-15];
-    myCircle.transform.scale = [400,400,1,0];
+    myCircle.transform.scale = [100,100,1,0];
 
     myCamera.Size = [testCanvas.width,testCanvas.height];
     myCamera.transform.position = [0,0,-10];
