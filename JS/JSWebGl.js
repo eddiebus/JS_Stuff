@@ -143,7 +143,8 @@ class TransForm {
 class WebGlContext {
     constructor(HTMLCanvas) {
         this._canvasContext = HTMLCanvas.getContext("webgl", {
-            premultipliedAlpha: false
+            premultipliedAlpha: false,
+            antialias: true
         });
         this._canvas = HTMLCanvas;
 

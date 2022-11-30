@@ -250,7 +250,7 @@ let MyWebGlContext = new WebGlContext(testCanvas);
 
 
 MyWebGlContext.setCanFullScreen(true);
-MyWebGlContext.resolutionScale = 1;
+MyWebGlContext.resolutionScale = 1.5;
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
