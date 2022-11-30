@@ -350,7 +350,7 @@ function loop() {
         }
     }
 
-    MyWebGlContext.clear([0,0.5,1,1]);
+    MyWebGlContext.clear([0,0.5,1,0]);
 
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
@@ -371,7 +371,7 @@ function loop() {
     TestWebGlText.Transform.scale = [testCanvas.width,300,1,0];
     TextSquare.transform = TestWebGlText.Transform;
 
-    myCircle.transform.position = [0,0,-30];
+    myCircle.transform.position = [0,0,-15];
     myCircle.transform.scale = [testCanvas.width * 0.90,testCanvas.height * 0.90,1,0];
 
     myCamera.Size = [testCanvas.width,testCanvas.height];
