@@ -5,13 +5,13 @@ class WebGlText {
         this._parentContext = WebGlContext;
         this._canvasContext = this._targetCanvas.getContext("2d");
         this._TextTexture = new JSWebGlCanvasTexture(this._parentContext,this._targetCanvas);;
-        this._RenderSquare = new JSWebGlSquare(WebGlContext,new WebGlVector4(1,1,1,0.8));
+        this._RenderSquare = new JSWebGlSquare(WebGlContext,[1,1,1,0.8]);
 
         this.TextString = "";
         this.Font = "arial";
         this.FontSize = 100;
         this.textAlign = "center";
-        this.fillStyle = "#333333";
+        this.fillStyle = "#ffffff";
 
         this.properties = {
             maxLength: 0,
@@ -187,7 +187,7 @@ class WebGlText {
 
         let lineY = this.FontSize;
         for (let i = 0; i < lines.length; i++){
-            this._canvasContext.fillStyle = "#000000";
+            this._canvasContext.fillStyle = this.fillStyle;
             this._canvasContext.fillText(lines[i],
                 this._targetCanvas.width / 2,
                 lineY,
@@ -230,7 +230,6 @@ class WebGlText {
             this._targetCanvas.width / 2,
             0 + this.FontSize);
 
-        console.log(this._targetCanvas.width);
     }
 
     draw(WebGlShaderProgram){
@@ -257,12 +256,14 @@ let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
 myCamera._getInverseMatrix();
 
-let mySquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,0.5,0.5,1));
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,0,1));
-let TextSquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
+let mySquare = new JSWebGlSquare(MyWebGlContext,[1,0.5,0.5,1]);
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,[0,0,0,1]);
+let TextSquare = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
+let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5,0,0.8,1]);
+let myTriangle = new JSWebGlTri(MyWebGlContext,[],[1,0,0,1]);
 
-let touchSquare = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(0,0,1,0.2));
-let touchSquareMid = new JSWebGlSquare(MyWebGlContext,new WebGlVector4(1,1,1,1));
+let touchSquare = new JSWebGlSquare(MyWebGlContext,[0,0,1,0.2]);
+let touchSquareMid = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 
 let rotationVector = new WebGlVector3(0,0,0);
 
@@ -275,9 +276,7 @@ TestWebGlText._setMultiLineText(testString);
 TestWebGlText._setMultiLineText(testString);
 
 
-
 function loop() {
-
     if (JSGameInput.GetKey("e").Press) {
         rotationVector.z += Time.deltaTime * 0.3;
     }
@@ -351,7 +350,7 @@ function loop() {
         }
     }
 
-    MyWebGlContext.clear(new WebGlVector4(0,1,1,1));
+    MyWebGlContext.clear([0,0.5,1,1]);
 
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
@@ -365,19 +364,30 @@ function loop() {
     mySquare2.transform.position[2] = -10
     mySquare.transform.position[2] = -5
 
+    myTriangle.transform.Copy(mySquare.transform);
+    myTriangle.transform.scale = [100,100,0,0];
+
     TestWebGlText.Transform.position = [0,0,-20];
     TestWebGlText.Transform.scale = [testCanvas.width,300,1,0];
     TextSquare.transform = TestWebGlText.Transform;
 
+    myCircle.transform.position = [0,0,-90];
+    myCircle.transform.scale = [testCanvas.width,testCanvas.height,1,0];
+
     myCamera.Size = [testCanvas.width,testCanvas.height];
     myCamera.transform.position = [0,0,-10];
 
+
+
     myCamera.setToShader(myShaderProgram);
+    myCircle.draw(myShaderProgram);
     TextSquare.setTexture(TestWebGlText._TextTexture);
     TestWebGlText.draw(myShaderProgram);
 
     mySquare2.draw(myShaderProgram);
     mySquare.draw(myShaderProgram);
+    myCircle.draw(myShaderProgram);
+    myTriangle.draw(myShaderProgram);
 
 
     if (testCanvas_TouchInput.touch[0].isPressed) {
