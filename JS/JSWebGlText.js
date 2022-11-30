@@ -260,7 +260,6 @@ let mySquare = new JSWebGlSquare(MyWebGlContext,[1,0.5,0.5,1]);
 let mySquare2 = new JSWebGlSquare(MyWebGlContext,[0,0,0,1]);
 let TextSquare = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5,1.0,0.5,1]);
-let myTriangle = new JSWebGlTri(MyWebGlContext,[],[1,0,0,1]);
 
 let touchSquare = new JSWebGlSquare(MyWebGlContext,[0,0,1,0.2]);
 let touchSquareMid = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
@@ -350,7 +349,7 @@ function loop() {
         }
     }
 
-    MyWebGlContext.clear([0,0.5,1,0]);
+    MyWebGlContext.clear([0,0,1,1]);
 
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
@@ -364,8 +363,6 @@ function loop() {
     mySquare2.transform.position[2] = -10
     mySquare.transform.position[2] = -5
 
-    myTriangle.transform.Copy(mySquare.transform);
-    myTriangle.transform.scale = [100,100,0,0];
 
     TestWebGlText.Transform.position = [0,0,-20];
     TestWebGlText.Transform.scale = [testCanvas.width,300,1,0];
