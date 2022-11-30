@@ -142,10 +142,7 @@ class TransForm {
 // WebGl Context is Linked to HTML Canvas
 class WebGlContext {
     constructor(HTMLCanvas) {
-        this._canvasContext = HTMLCanvas.getContext("webgl", {
-            premultipliedAlpha: false,
-            antialias: false
-        });
+        this._canvasContext = HTMLCanvas.getContext("webgl2", {});
         this._canvas = HTMLCanvas;
 
         if (this._canvasContext === null) {
