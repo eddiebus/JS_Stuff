@@ -349,7 +349,7 @@ function loop() {
         }
     }
 
-    MyWebGlContext.clear([0,0,1,1]);
+    MyWebGlContext.clear([0,0,0,1]);
 
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;

@@ -144,7 +144,7 @@ class WebGlContext {
     constructor(HTMLCanvas) {
         this._canvasContext = HTMLCanvas.getContext("webgl", {
             premultipliedAlpha: false,
-            antialias: true
+            antialias: false
         });
         this._canvas = HTMLCanvas;
 
