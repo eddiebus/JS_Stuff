@@ -661,7 +661,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 50; //How many sections of the circle
+        let sections = 20; //How many sections of the circle
         // How large are the sections
         let gapSize = 360 / sections;
 

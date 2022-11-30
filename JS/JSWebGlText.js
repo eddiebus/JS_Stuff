@@ -259,7 +259,7 @@ myCamera._getInverseMatrix();
 let mySquare = new JSWebGlSquare(MyWebGlContext,[1,0.5,0.5,1]);
 let mySquare2 = new JSWebGlSquare(MyWebGlContext,[0,0,0,1]);
 let TextSquare = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
-let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5,0,0.8,1]);
+let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5,1.0,0.5,1]);
 let myTriangle = new JSWebGlTri(MyWebGlContext,[],[1,0,0,1]);
 
 let touchSquare = new JSWebGlSquare(MyWebGlContext,[0,0,1,0.2]);
@@ -371,7 +371,7 @@ function loop() {
     TestWebGlText.Transform.scale = [testCanvas.width,300,1,0];
     TextSquare.transform = TestWebGlText.Transform;
 
-    myCircle.transform.position = [0,0,-50];
+    myCircle.transform.position = [0,0,-30];
     myCircle.transform.scale = [testCanvas.width * 0.90,testCanvas.height * 0.90,1,0];
 
     myCamera.Size = [testCanvas.width,testCanvas.height];
