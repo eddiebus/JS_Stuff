@@ -368,11 +368,12 @@ function loop() {
     TestWebGlText.Transform.scale = [testCanvas.width,300,1,0];
     TextSquare.transform = TestWebGlText.Transform;
 
-    myCircle.transform.position = [0,0,-15];
-    myCircle.transform.scale = [100,100,1,0];
+    myCircle.transform.position = [0,0,-30];
+    myCircle.transform.scale = [testCanvas.width,testCanvas.height,1,0];
 
     myCamera.Size = [testCanvas.width,testCanvas.height];
     myCamera.transform.position = [0,0,-10];
+
 
 
     myCamera.setToShader(myShaderProgram);
@@ -382,7 +383,6 @@ function loop() {
 
     mySquare2.draw(myShaderProgram);
     mySquare.draw(myShaderProgram);
-    myCircle.draw(myShaderProgram);
     //myTriangle.draw(myShaderProgram);
 
 
