@@ -250,7 +250,7 @@ let MyWebGlContext = new WebGlContext(testCanvas);
 
 
 MyWebGlContext.setCanFullScreen(true);
-MyWebGlContext.resolutionScale = 1.5;
+MyWebGlContext.resolutionScale = 1;
 
 let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
@@ -371,8 +371,8 @@ function loop() {
     TestWebGlText.Transform.scale = [testCanvas.width,300,1,0];
     TextSquare.transform = TestWebGlText.Transform;
 
-    myCircle.transform.position = [0,0,-90];
-    myCircle.transform.scale = [testCanvas.width,testCanvas.height,1,0];
+    myCircle.transform.position = [0,0,-50];
+    myCircle.transform.scale = [testCanvas.width * 0.90,testCanvas.height * 0.90,1,0];
 
     myCamera.Size = [testCanvas.width,testCanvas.height];
     myCamera.transform.position = [0,0,-10];
