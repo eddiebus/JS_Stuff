@@ -683,7 +683,6 @@ class JSWebGlCircle {
             let startAngle = i * gapSize;
             let endAngle = startAngle + gapSize;
 
-            debugger;
             // Start Angle + Extend
             vertices.push(Math.cos(startAngle) * radius);
             vertices.push(Math.sin(startAngle) * radius);
