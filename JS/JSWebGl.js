@@ -278,7 +278,7 @@ void main(void) {
 }
         `
         this.fragShaderCode = `
-precision mediump float;
+precision lowp float;
 
 varying   vec4 vColour;
 varying   vec2 vTextCoord;
