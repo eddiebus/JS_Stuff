@@ -387,7 +387,7 @@ function loop() {
     mySquare2.draw(myShaderProgram);
     mySquare.draw(myShaderProgram);
     myCircle.draw(myShaderProgram);
-    myTriangle.draw(myShaderProgram);
+    //myTriangle.draw(myShaderProgram);
 
 
     if (testCanvas_TouchInput.touch[0].isPressed) {
