@@ -220,7 +220,7 @@ class WebGlContext {
         );
 
         this._canvasContext.enable(this._canvasContext.DEPTH_TEST);
-        this._canvasContext.depthFunc(this._canvasContext.LEQUAL);
+        this._canvasContext.depthFunc(this._canvasContext.LESS);
         this._canvasContext.disable(this._canvasContext.CULL_FACE);
 
 
