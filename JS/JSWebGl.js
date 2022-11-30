@@ -667,21 +667,22 @@ class JSWebGlCircle {
 
 
 
+        // Add center point
+        vertices.push(0);
+        vertices.push(0);
+        vertices.push(0);
+
+        vColours.push(colour[0]);
+        vColours.push(colour[1]);
+        vColours.push(colour[2]);
+        vColours.push(colour[3]);
+
         // Add points around center
         // Add indecies
         for (let i = 0; i < 360; i++) {
             let startAngle = DegToRadians(i);
             let endAngle = DegToRadians(i+1);
 
-            // Add center point
-            vertices.push(0);
-            vertices.push(0);
-            vertices.push(0);
-
-            vColours.push(colour[0]);
-            vColours.push(colour[1]);
-            vColours.push(colour[2]);
-            vColours.push(colour[3]);
 
             debugger;
             // Start Angle + Extend
@@ -788,7 +789,7 @@ class JSWebGlCircle {
         WebGlShaderProgram.setTexturing(0);
 
         this._parentContext.drawElements(
-            this._parentContext.TRIANGLES,
+            this._parentContext.TRIANGLE_FAN,
             this._indexCount,
             this._parentContext.UNSIGNED_SHORT, 0);
     }
