@@ -658,7 +658,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 100; //How many sections of the circle
+        let sections = 5; //How many sections of the circle
         // How large are the sections
         let gapSize = DegToRadians(360/sections);
 
@@ -676,7 +676,7 @@ class JSWebGlCircle {
 
         // Add points around center
         // Add indecies
-        for (let i = 0; i < sections; i++) {
+        for (let i = 0; i < sections/2; i++) {
             let startAngle = i * gapSize;
             let endAngle = startAngle + gapSize;
 
