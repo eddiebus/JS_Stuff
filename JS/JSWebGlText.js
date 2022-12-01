@@ -378,12 +378,10 @@ function loop() {
 
     myCamera.setToShader(myShaderProgram);
     myCircle.draw(myShaderProgram);
-    TextSquare.setTexture(TestWebGlText._TextTexture);
-    TestWebGlText.draw(myShaderProgram);
+    //TestWebGlText.draw(myShaderProgram);
 
     mySquare2.draw(myShaderProgram);
     mySquare.draw(myShaderProgram);
-    //myTriangle.draw(myShaderProgram);
 
 
     if (testCanvas_TouchInput.touch[0].isPressed) {

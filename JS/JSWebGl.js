@@ -74,7 +74,7 @@ class TransForm {
         let scaleMatrix = mat4.create();
         mat4.fromScaling(
             scaleMatrix,
-            [this.scale[0], this.scale[1], this.scale[3]]
+            [this.scale[0], this.scale[1], this.scale[3],0]
         );
 
         let translateMatrix = mat4.create();
@@ -645,7 +645,7 @@ class JSWebGlTri {
 }
 
 class JSWebGlCircle {
-    constructor(WebGlContext, colour, radius = 1) {
+    constructor(WebGlContext, colour, radius = 1.0) {
         this._parentContext = WebGlContext._canvasContext;
         this.transform = new TransForm();
 
