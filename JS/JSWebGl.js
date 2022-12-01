@@ -671,7 +671,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 10; //How many sections of the circle
+        let sections = 100; //How many sections of the circle
         // How large are the sections
 
         // Add center point
@@ -709,7 +709,7 @@ class JSWebGlCircle {
 
         }
 
-        this.vCount = vertices.length / 3;
+        this.vCount = (vertices.length /3) * 0.7;
         console.log(`This circle has ${this.vCount} vertices`);
         console.log(`This circle has ${sections} sections`);
         this._indexCount = indices.length;
@@ -784,7 +784,7 @@ class JSWebGlCircle {
     }
 
     draw(WebGlShaderProgram) {
-        WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);
+        WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer, null);
 
         // Bind Colour
         this._parentContext.bindBuffer(
@@ -820,8 +820,6 @@ class JSWebGlCircle {
         );
 
         WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
-
-        WebGlShaderProgram.setTexturing(1);
 
         this._parentContext.activeTexture(this._parentContext.TEXTURE0);
 

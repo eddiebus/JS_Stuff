@@ -177,7 +177,7 @@ class WebGlText {
         renderHeight = this.FontSize * lines.length;
 
         this._targetCanvas.width = renderWidth;
-        this._targetCanvas.height = renderWidth;
+        this._targetCanvas.height = renderHeight;
 
         //Set wanted font styles/properties
         this._TextCanvasTexture.CanvasContext.fillStyle = this.fillStyle;
