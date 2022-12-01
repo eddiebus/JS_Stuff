@@ -709,7 +709,7 @@ class JSWebGlCircle {
 
         }
 
-        this.vCount = (vertices.length /3) * 0.7;
+        this.vCount = (vertices.length /3) * 0.9;
         console.log(`This circle has ${this.vCount} vertices`);
         console.log(`This circle has ${sections} sections`);
         this._indexCount = indices.length;
