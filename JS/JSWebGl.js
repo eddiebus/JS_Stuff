@@ -217,7 +217,7 @@ class WebGlContext {
         );
 
         this._canvasContext.enable(this._canvasContext.DEPTH_TEST);
-        this._canvasContext.depthFunc(this._canvasContext.LESS);
+        this._canvasContext.depthFunc(this._canvasContext.LEQUAL);
         this._canvasContext.disable(this._canvasContext.CULL_FACE);
 
 
@@ -686,7 +686,7 @@ class JSWebGlCircle {
 
         // Add points around center
         // Add indecies
-        for (let i = 0; i <= sections; i++) {
+        for (let i = 0; i <= sections + 1; i++) {
             let Angle = i * DegToRadians(360.0/sections);
 
             let vertX = Math.cos(Angle) * radius;
@@ -830,7 +830,7 @@ class JSWebGlCircle {
         this._parentContext.drawArrays(
             this._parentContext.TRIANGLE_FAN,
             0,
-            (this.vCount/3) - 0
+            (this.vCount/3) - 1
         );
     }
 }
