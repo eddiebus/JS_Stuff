@@ -177,7 +177,7 @@ class WebGlText {
         renderHeight = this.FontSize * lines.length;
 
         this._targetCanvas.width = renderWidth;
-        this._targetCanvas.height = renderHeight;
+        this._targetCanvas.height = renderWidth;
 
         //Set wanted font styles/properties
         this._TextCanvasTexture.CanvasContext.fillStyle = this.fillStyle;
@@ -195,6 +195,16 @@ class WebGlText {
             ;
             lineY += this.FontSize;
         }
+
+        this._TextCanvasTexture.CanvasContext.fillStyle = "rgb(0,0,0)";
+        this._TextCanvasTexture.CanvasContext.beginPath();
+        this._TextCanvasTexture.CanvasContext.arc(
+            renderWidth/2, renderWidth/2,
+            this._TextCanvasTexture._canvas.width/2
+            , 0, 2 * Math.PI);
+        this._TextCanvasTexture.CanvasContext.fill();
+        this._TextCanvasTexture.CanvasContext.closePath();
+
         this._TextCanvasTexture.updateTexture();
     }
 
@@ -376,10 +386,10 @@ function loop() {
     myCamera.setToShader(myShaderProgram);
 
     TestWebGlText.draw(myShaderProgram);
-    myCircle.draw(myShaderProgram);
+    //myCircle.draw(myShaderProgram);
 
-    mySquare2.draw(myShaderProgram);
-    mySquare.draw(myShaderProgram);
+    //mySquare2.draw(myShaderProgram);
+    //mySquare.draw(myShaderProgram);
 
 
     if (testCanvas_TouchInput.touch[0].isPressed) {
