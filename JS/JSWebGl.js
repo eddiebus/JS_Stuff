@@ -291,6 +291,8 @@ void main() {
             gl_FragColor = vec4(vColour.rgb * vColour.a, vColour.a);
         }
         else{
+            vec4 cSample = texture2D(vTexture,vTextCoord);
+            gl_FragColor = cSample;
         }
 }
 `
@@ -387,9 +389,17 @@ void main() {
 class JSWebGlCanvasTexture {
     constructor(WebGlContext, HTMLCanvas) {
         this._parentContext = WebGlContext;
-        this._canvas = HTMLCanvas
+        this._canvas = HTMLCanvas;
+        this._canvas.width = 100;
+        this._canvas.height = 100;
         this.Texture = this._parentContext._canvasContext.createTexture();
 
+        this.updateTexture();
+    }
+
+    clear(){
+        this._canvas.fillStyle = "rgba(0,0,0,0)";
+        this._canvas.clear(0,0,this._canvas.width,this._canvas.height);
         this.updateTexture();
     }
 
@@ -654,6 +664,7 @@ class JSWebGlCircle {
         this._colourBuffer = this._parentContext.createBuffer();
 
         let vertices = [];
+        let textureCoord = [];
         let vColours = [];
         let indices = [];
 
@@ -679,6 +690,9 @@ class JSWebGlCircle {
             vertices.push(Math.cos(Angle) * radius);
             vertices.push(Math.sin(Angle) * radius);
             vertices.push(0);
+
+            textureCoord.push(0);
+            textureCoord.push(0);
 
             vColours.push(colour[0]);
             vColours.push(colour[1]);
@@ -740,6 +754,23 @@ class JSWebGlCircle {
             this._parentContext.ARRAY_BUFFER,
             null
         );
+
+        // write texCoords
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            this._texCoordBuffer
+        );
+
+        this._parentContext.bufferData(
+            this._parentContext.ARRAY_BUFFER,
+            new Float32Array(textureCoord),
+            this._parentContext.STATIC_DRAW
+        );
+
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            null
+        );
     }
 
     draw(WebGlShaderProgram) {
@@ -757,6 +788,23 @@ class JSWebGlCircle {
             this._parentContext.FLOAT,
             false, 0, 0
         );
+
+        // Bind Tex Coord
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            this._texCoordBuffer
+        );
+
+        this._parentContext.vertexAttribPointer(
+            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord,
+            2,
+            this._parentContext.FLOAT,
+            false, 0, 0
+        );
+        this._parentContext.enableVertexAttribArray(
+            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord
+        );
+
         this._parentContext.enableVertexAttribArray(
             WebGlShaderProgram._shaderInputLayout.attribLocations.colour
         );
