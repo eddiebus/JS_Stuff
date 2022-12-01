@@ -671,7 +671,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 100; //How many sections of the circle
+        let sections = 10; //How many sections of the circle
         // How large are the sections
 
         // Add center point
@@ -709,7 +709,7 @@ class JSWebGlCircle {
 
         }
 
-        this.vCount = (vertices.length /3) * 1;
+        this.vCount = vertices.length * 0.2 ;
         console.log(`This circle has ${this.vCount} vertices`);
         console.log(`This circle has ${sections} sections`);
         this._indexCount = indices.length;
