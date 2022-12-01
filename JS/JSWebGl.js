@@ -671,7 +671,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 360; //How many sections of the circle
+        let sections = 10; //How many sections of the circle
         // How large are the sections
 
         // Add center point
