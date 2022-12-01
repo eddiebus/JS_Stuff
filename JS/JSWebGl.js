@@ -686,7 +686,7 @@ class JSWebGlCircle {
 
         // Add points around center
         // Add indecies
-        for (let i = 0; i <= sections + 10; i++) {
+        for (let i = 0; i <= sections + 5; i++) {
             let Angle = i * DegToRadians(360.0/sections);
 
             let vertX = Math.cos(Angle) * radius;
@@ -830,7 +830,7 @@ class JSWebGlCircle {
         this._parentContext.drawArrays(
             this._parentContext.TRIANGLE_FAN,
             0,
-            Math.ceil(this.vCount/3)
+            Math.ceil(this.vCount/3) - 1
         );
     }
 }
