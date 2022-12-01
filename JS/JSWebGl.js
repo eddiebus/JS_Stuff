@@ -655,7 +655,7 @@ class JSWebGlTri {
 }
 
 class JSWebGlCircle {
-    constructor(WebGlContext, colour, radius = 1.0) {
+    constructor(WebGlContext, colour,sections = 100) {
         this._parentContext = WebGlContext._canvasContext;
         this.canvas = document.createElement("canvas");
         this.Texture = new JSWebGlCanvasTexture(WebGlContext,this.canvas);
@@ -671,7 +671,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 10; //How many sections of the circle
+        this.sections = sections ; //How many sections of the circle
         // How large are the sections
 
         // Add center point
@@ -686,11 +686,11 @@ class JSWebGlCircle {
 
         // Add points around center
         // Add indecies
-        for (let i = 0; i <= sections + 5; i++) {
+        for (let i = 0; i <= this.sections + 5; i++) {
             let Angle = i * DegToRadians(360.0/sections);
 
-            let vertX = Math.cos(Angle) * radius;
-            let vertY = Math.sin(Angle) * radius;
+            let vertX = Math.cos(Angle) * 1;
+            let vertY = Math.sin(Angle) * 1;
             // Start Angle + Extend
             vertices.push(vertX);
             vertices.push(vertY);
@@ -830,7 +830,7 @@ class JSWebGlCircle {
         this._parentContext.drawArrays(
             this._parentContext.TRIANGLE_FAN,
             0,
-            Math.ceil(this.vCount/3) - 1
+            this.sections + 2
         );
     }
 }
