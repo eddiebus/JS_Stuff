@@ -830,7 +830,7 @@ class JSWebGlCircle {
         this._parentContext.drawArrays(
             this._parentContext.TRIANGLE_FAN,
             0,
-            (this.vCount/3) - 1
+            (this.vCount/3)
         );
     }
 }
