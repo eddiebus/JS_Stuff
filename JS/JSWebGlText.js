@@ -4,7 +4,7 @@ class WebGlText {
         this._targetCanvas = document.createElement("canvas");
         this._parentContext = WebGlContext;
         this._canvasContext = this._targetCanvas.getContext("2d");
-        this._TextTexture = new JSWebGlCanvasTexture(this._parentContext,this._targetCanvas);;
+        this._TextCanvasTexture = new JSWebGlCanvasTexture(this._parentContext,this._targetCanvas);;
         this._RenderSquare = new JSWebGlSquare(WebGlContext,[1,1,1,0.8]);
 
         this.TextString = "";
@@ -180,10 +180,10 @@ class WebGlText {
         this._targetCanvas.height = renderHeight;
 
         //Set wanted font styles/properties
-        this._canvasContext.fillStyle = this.fillStyle;
-        this._canvasContext.textAlign = this.textAlign;
-        this._canvasContext.font = this.FontSize + "px arial";
-        this._canvasContext.textBaseline = "bottom";
+        this._TextCanvasTexture.CanvasContext.fillStyle = this.fillStyle;
+        this._TextCanvasTexture.CanvasContext.textAlign = this.textAlign;
+        this._TextCanvasTexture.CanvasContext.font = this.FontSize + "px arial";
+        this._TextCanvasTexture.CanvasContext.textBaseline = "bottom";
 
         let lineY = this.FontSize;
         for (let i = 0; i < lines.length; i++){
@@ -195,8 +195,7 @@ class WebGlText {
             ;
             lineY += this.FontSize;
         }
-
-        this._TextTexture.updateTexture();
+        this._TextCanvasTexture.updateTexture();
     }
 
     _setText(newString) {
@@ -233,7 +232,7 @@ class WebGlText {
     }
 
     draw(WebGlShaderProgram){
-        this._RenderSquare.setTexture(this._TextTexture);
+        this._RenderSquare.setTexture(this._TextCanvasTexture);
         this._RenderSquare.transform = this.Transform;
         this._RenderSquare.draw(WebGlShaderProgram);
     }
@@ -373,8 +372,6 @@ function loop() {
 
     myCamera.Size = [testCanvas.width,testCanvas.height];
     myCamera.transform.position = [0,0,-10];
-
-
 
     myCamera.setToShader(myShaderProgram);
 

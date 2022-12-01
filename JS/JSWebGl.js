@@ -389,16 +389,22 @@ class JSWebGlCanvasTexture {
     constructor(WebGlContext, HTMLCanvas) {
         this._parentContext = WebGlContext;
         this._canvas = HTMLCanvas;
+        this.CanvasContext = this._canvas.getContext("2d");
         this._canvas.width = 100;
         this._canvas.height = 100;
         this.Texture = this._parentContext._canvasContext.createTexture();
 
         this.updateTexture();
     }
-
-    clear(){
-        this._canvas.fillStyle = "rgba(0,0,0,0)";
-        this._canvas.clear(0,0,this._canvas.width,this._canvas.height);
+    clear(colour = [0,0,0,0]){
+        this.CanvasContext.clearRect(0,0,this._canvas.width,this._canvas.height);
+        this.CanvasContext.fillStyle = `rgba(
+        ${colour[0] * 255},
+        ${colour[1] * 255},
+        ${colour[2] * 255},
+        ${colour[3]}
+        )`;
+        this.CanvasContext.fillRect(0,0,this._canvas.width,this._canvas.height);
         this.updateTexture();
     }
 
@@ -655,6 +661,8 @@ class JSWebGlTri {
 class JSWebGlCircle {
     constructor(WebGlContext, colour, radius = 1.0) {
         this._parentContext = WebGlContext._canvasContext;
+        this.canvas = document.createElement("canvas");
+        this.Texture = new JSWebGlCanvasTexture(WebGlContext,this.canvas);
         this.transform = new TransForm();
 
         this._vertexBuffer = this._parentContext.createBuffer();
@@ -685,13 +693,18 @@ class JSWebGlCircle {
         for (let i = 0; i <= sections; i++) {
             let Angle = i * DegToRadians(360.0/sections);
 
+            let vertX = Math.cos(Angle) * radius;
+            let vertY = Math.sin(Angle) * radius;
             // Start Angle + Extend
-            vertices.push(Math.cos(Angle) * radius);
-            vertices.push(Math.sin(Angle) * radius);
+            vertices.push(vertX);
+            vertices.push(vertY);
             vertices.push(0);
 
-            textureCoord.push(0);
-            textureCoord.push(0);
+            let textX = 0.5 + vertX;
+            let texY = 0.5 + vertY;
+
+            textureCoord.push(vertX);
+            textureCoord.push(vertY);
 
             vColours.push(colour[0]);
             vColours.push(colour[1]);
@@ -770,6 +783,8 @@ class JSWebGlCircle {
             this._parentContext.ARRAY_BUFFER,
             null
         );
+
+        this.Texture.clear([1,1,0,1]);
     }
 
     draw(WebGlShaderProgram) {
@@ -809,7 +824,14 @@ class JSWebGlCircle {
         );
 
         WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
-        WebGlShaderProgram.setTexturing(0);
+
+        WebGlShaderProgram.setTexturing(1);
+
+        this._parentContext.activeTexture(this._parentContext.TEXTURE0);
+
+        this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.Texture.Texture);
+
+        this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
 
         this._parentContext.drawArrays(
             this._parentContext.TRIANGLE_FAN,
