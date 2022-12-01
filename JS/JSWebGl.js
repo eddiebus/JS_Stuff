@@ -278,7 +278,7 @@ void main(void) {
 }
         `
         this.fragShaderCode = `
-precision lowp float;
+precision mediump float;
 
 varying   vec4 vColour;
 varying   vec2 vTextCoord;
@@ -291,8 +291,6 @@ void main() {
             gl_FragColor = vec4(vColour.rgb * vColour.a, vColour.a);
         }
         else{
-            vec4 cSample = texture2D(vTexture,vTextCoord);
-            gl_FragColor = cSample;
         }
 }
 `
@@ -363,12 +361,13 @@ void main() {
     // Set Vertex and index Buffer
     setVertexIndexBuffer(vBuffer, indexBuffer) {
         this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            vBuffer
-        );
-        this._parentContext.bindBuffer(
             this._parentContext.ELEMENT_ARRAY_BUFFER,
             indexBuffer
+        );
+
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            vBuffer
         );
 
         this._parentContext.vertexAttribPointer(
@@ -658,7 +657,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        let sections = 20; //How many sections of the circle
+        let sections = 360; //How many sections of the circle
         // How large are the sections
 
         // Add center point
