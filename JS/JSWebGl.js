@@ -287,12 +287,8 @@ uniform int toTexture;
 uniform sampler2D vTexture;
 
 void main() {
-        gl_FragColor = vec4(vColour.rgb * vColour.a, vColour.a);
-        
-        if (toTexture >= 1){
-            vec4 cSample = texture2D(vTexture,vTextCoord);
-            gl_FragColor = cSample;
-        }
+        vec4 cSample = texture2D(vTexture,vTextCoord);
+        gl_FragColor = cSample;
 }
 `
         this.vShader = WebGlContext.createVertexShader(this.vShaderCode);
