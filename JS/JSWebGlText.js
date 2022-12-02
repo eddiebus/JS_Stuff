@@ -263,7 +263,7 @@ myCamera._getInverseMatrix();
 
 
 let imgSource2 = window.location.href + "/Assets/cat.jpg"
-let myImage = new JSWebGlImage(imgSource2);
+let myImage = new JSWebGlImage("https://i1.sndcdn.com/avatars-wmzPxL4TeWP4ccOn-LMJA2Q-t500x500.jpg");
 
 console.log(window.location.href);
 console.log(window.location);
@@ -287,10 +287,10 @@ let touchSquareMid = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let rotationVector = new WebGlVector3(0,0,0);
 
 let TestWebGlText = new WebGlText(MyWebGlContext);
-let testString = "日本語でテクストを書けるのか？";
+let testString = "Talk shit, get stabbed.";
 TestWebGlText.properties.maxLength = testCanvas.width;
 TestWebGlText.FontSize = testCanvas.height * 0.1
-TestWebGlText.properties.strokeStyle.colour = [0,0,0,1];
+TestWebGlText.properties.strokeStyle.colour = [1,0,0,1];
 TestWebGlText.properties.strokeStyle.width = 2;
 TestWebGlText.SetText(testString);
 
