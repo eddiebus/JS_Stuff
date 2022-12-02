@@ -264,12 +264,13 @@ myCamera._getInverseMatrix();
 
 let myImage = new JSWebGlImage("../Assets/cat.jpg");
 let myTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.createElement("canvas"));
-
+myTexture.clear([1,0.5,0,0.2])
 myTexture.setAsImage(myImage);
+
 
 let mySquare = new JSWebGlSquare(MyWebGlContext,[1,0.5,0.5,1]);
 
-mySquare.setTexture(JSWebGlCanvasTexture);
+mySquare.setTexture(myTexture);
 
 let mySquare2 = new JSWebGlSquare(MyWebGlContext,[0,0,0,1]);
 let TextSquare = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);

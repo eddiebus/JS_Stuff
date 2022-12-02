@@ -46,8 +46,8 @@ class TransForm {
         }
     }
 
-    Copy(otherTransform){
-        if (otherTransform.constructor.name == this.constructor.name){
+    Copy(otherTransform) {
+        if (otherTransform.constructor.name == this.constructor.name) {
             vec4.copy(this.position, otherTransform.position);
             vec4.copy(this.rotation, otherTransform.rotation);
             vec4.copy(this.scale, otherTransform.scale);
@@ -63,7 +63,7 @@ class TransForm {
         let scaleMatrix = mat4.create();
         mat4.fromScaling(
             scaleMatrix,
-            [this.scale[0], this.scale[1], this.scale[2],1]
+            [this.scale[0], this.scale[1], this.scale[2], 1]
         );
 
         let translateMatrix = mat4.create();
@@ -130,7 +130,7 @@ class TransForm {
 
 // WebGl Context is Linked to HTML Canvas
 class WebGlContext {
-    constructor(HTMLCanvas,antiAlias = true) {
+    constructor(HTMLCanvas, antiAlias = true) {
         this._canvasContext = HTMLCanvas.getContext("webgl2", {
             antialias: antiAlias
         });
@@ -374,22 +374,33 @@ void main() {
 
 
 class JSWebGlImage {
+
     constructor(urlSource) {
         this.imgElement = document.createElement("img");
         this.LoadFailed = false;
         this.Complete = false;
 
-        this.imgElement.addEventListener("load",(event) => {
+        this.imgElement.addEventListener("load", (event) => {
             this.Complete = true;
-            this.LoadFailed = true;
+            this.LoadFailed = false;
         })
-        this.imgElement.addEventListener("error",(event) => {
+        this.imgElement.addEventListener("error", (event) => {
             this.Complete = true;
             this.LoadFailed = true;
         })
         this.imgElement.src = urlSource;
+
+        this.LoadPromise = new Promise((resolve, reject) => {
+            this.imgElement.onload = resolve;
+            this.imgElement.onerror = reject;
+        });
+
+        this.GetLoadPromise();
     }
 
+    async GetLoadPromise(){
+        return this.LoadPromise;
+    }
 }
 
 class JSWebGlCanvasTexture {
@@ -403,27 +414,39 @@ class JSWebGlCanvasTexture {
 
         this.updateTexture();
     }
-    clear(colour = [0,0,0,0]){
-        this.CanvasContext.clearRect(0,0,this._canvas.width,this._canvas.height);
+
+    clear(colour = [0, 0, 0, 0]) {
+        this.CanvasContext.clearRect(0, 0, this._canvas.width, this._canvas.height);
         this.CanvasContext.fillStyle = `rgba(
         ${colour[0] * 255},
         ${colour[1] * 255},
         ${colour[2] * 255},
         ${colour[3]}
         )`;
-        this.CanvasContext.fillRect(0,0,this._canvas.width,this._canvas.height);
+        this.CanvasContext.fillRect(0, 0, this._canvas.width, this._canvas.height);
         this.updateTexture();
     }
 
-    setAsImage(JSWebGlImage){
-        if (JSWebGlImage.imgElement != null){
-            this._canvas.width = 100;
-            this._canvas.height = 100;
+    setAsImage(JSWebGlImage) {
+        if (JSWebGlImage.imgElement != null) {
+            JSWebGlImage.GetLoadPromise().then(()=>{
+                if (JSWebGlImage.LoadFailed) {
+                    return;
+                }
+                let width = JSWebGlImage.imgElement.width;
+                let height = JSWebGlImage.imgElement.height;
+                this._canvas.width = width;
+                this._canvas.height = height;
 
-            this.CanvasContext.clearRect(0,0,100,100);
-            this.CanvasContext.fillStyle = "rgba(77,255,113,0.57)";
-            this.CanvasContext.fillRect(0,0,100,100);
-            this.updateTexture();
+                this.CanvasContext.clearRect(0, 0, width, height);
+                this.CanvasContext.fillStyle = "rgba(77,255,113,0.57)";
+                this.CanvasContext.fillRect(0, 0, width, height);
+                this.CanvasContext.drawImage(
+                    JSWebGlImage.imgElement,0,0,
+                    width,height);
+                this.updateTexture();
+            })
+
         }
     }
 
@@ -551,10 +574,10 @@ class JSWebGlCamera {
 }
 
 class JSWebGlCircle {
-    constructor(WebGlContext, colour,sections = 100) {
+    constructor(WebGlContext, colour, sections = 100) {
         this._parentContext = WebGlContext._canvasContext;
         this.canvas = document.createElement("canvas");
-        this.Texture = new JSWebGlCanvasTexture(WebGlContext,this.canvas);
+        this.Texture = new JSWebGlCanvasTexture(WebGlContext, this.canvas);
         this.transform = new TransForm();
 
         this._vertexBuffer = this._parentContext.createBuffer();
@@ -567,7 +590,7 @@ class JSWebGlCircle {
         let vColours = [];
         let indices = [];
 
-        this.sections = sections ; //How many sections of the circle
+        this.sections = sections; //How many sections of the circle
         // How large are the sections
 
         // Add center point
@@ -583,7 +606,7 @@ class JSWebGlCircle {
         // Add points around center
         // Add indecies
         for (let i = 0; i <= this.sections + 5; i++) {
-            let Angle = i * DegToRadians(360.0/sections);
+            let Angle = i * DegToRadians(360.0 / sections);
 
             let vertX = Math.cos(Angle) * 1;
             let vertY = Math.sin(Angle) * 1;
@@ -676,7 +699,7 @@ class JSWebGlCircle {
             null
         );
 
-        this.Texture.clear([1,1,0,1]);
+        this.Texture.clear([1, 1, 0, 1]);
     }
 
     draw(WebGlShaderProgram) {
@@ -737,8 +760,8 @@ class JSWebGlSquare {
     //c - The colour of this square
     constructor(WebGlContext, c) {
         this._parentContext = WebGlContext._canvasContext;
-        this.colour =  c;
-        this.Texture = new JSWebGlCanvasTexture(WebGlContext,document.createElement("canvas"));
+        this.colour = c;
+        this.Texture = new JSWebGlCanvasTexture(WebGlContext, document.createElement("canvas"));
         this.ExternalTexture = null;
         this.transform = new TransForm();
 
@@ -883,15 +906,13 @@ class JSWebGlSquare {
 
         WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
 
-        if (this.ExternalTexture)
-        {
+        if (this.ExternalTexture) {
             this._parentContext.activeTexture(this._parentContext.TEXTURE0);
 
             this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.ExternalTexture.Texture);
 
             this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
-        }
-        else {
+        } else {
             this._parentContext.activeTexture(this._parentContext.TEXTURE0);
 
             this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.Texture.Texture);
