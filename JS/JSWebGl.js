@@ -388,6 +388,7 @@ class JSWebGlImage {
             this.Complete = true;
             this.LoadFailed = true;
         })
+        this.imgElement.crossOrigin = "anonymous"
         this.imgElement.src = urlSource;
 
         this.LoadPromise = new Promise((resolve, reject) => {
