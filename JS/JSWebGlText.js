@@ -202,7 +202,7 @@ class WebGlText {
             this._canvasContext.fillText(lines[i],
                 this._targetCanvas.width / 2,
                 lineY,
-                this._targetCanvas.width * 0.95
+                this._targetCanvas.width * 1
             );
 
 
@@ -223,7 +223,7 @@ class WebGlText {
                 this._canvasContext.strokeText(lines[i],
                     this._targetCanvas.width / 2,
                     lineY,
-                    this._targetCanvas.width * 0.95
+                    this._targetCanvas.width * 1
                 )
 
                 lineY += this.properties.style.fontSize;
@@ -262,12 +262,8 @@ let myCamera = new JSWebGlCamera(MyWebGlContext);
 myCamera._getInverseMatrix();
 
 
-let imgSource2 = window.location.href + "/Assets/cat.jpg"
-let myImage = new JSWebGlImage("https://i1.sndcdn.com/avatars-wmzPxL4TeWP4ccOn-LMJA2Q-t500x500.jpg");
+let myImage = new JSWebGlImage("https://images-prod.dazeddigital.com/778/azure/dazed-prod/1330/4/1334197.jpg");
 
-console.log(window.location.href);
-console.log(window.location);
-console.log(new URL("https://eddiebus.github.io/JS_Stuff/"));
 let myTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.createElement("canvas"));
 myTexture.clear([1,0.5,0,0.2])
 myTexture.setAsImage(myImage);
@@ -277,7 +273,7 @@ let mySquare = new JSWebGlSquare(MyWebGlContext,[1,0.5,0.5,1]);
 
 mySquare.setTexture(myTexture);
 
-let mySquare2 = new JSWebGlSquare(MyWebGlContext,[0,0,0,1]);
+let mySquare2 = new JSWebGlSquare(MyWebGlContext,[0,1,0.3,1]);
 let TextSquare = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5,1.0,0.5,1]);
 
@@ -287,11 +283,11 @@ let touchSquareMid = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let rotationVector = new WebGlVector3(0,0,0);
 
 let TestWebGlText = new WebGlText(MyWebGlContext);
-let testString = "Talk shit, get stabbed.";
+let testString = "ニャン子";
 TestWebGlText.properties.maxLength = testCanvas.width;
-TestWebGlText.FontSize = testCanvas.height * 0.1
-TestWebGlText.properties.strokeStyle.colour = [1,0,0,1];
-TestWebGlText.properties.strokeStyle.width = 2;
+TestWebGlText.properties.style.fontSize = testCanvas.width * 0.15;
+TestWebGlText.properties.strokeStyle.colour = [1,1,1,1];
+TestWebGlText.properties.strokeStyle.width = 0.5;
 TestWebGlText.SetText(testString);
 
 
@@ -378,8 +374,8 @@ function loop() {
     touchSquare.transform.scale = [200,200,200,1];
     touchSquareMid.transform.scale = [50,50,50,1];
 
-    mySquare2.transform.scale = [200,200,1,1];
-    mySquare.transform.scale = [150,150,1,1];
+    mySquare2.transform.scale = [testCanvas.width * 0.3,testCanvas.width * 0.3,1,1];
+    mySquare.transform.scale = [testCanvas.width * 0.3,testCanvas.width * 0.3,1,1];
     mySquare2.transform.position[2] = -10
     mySquare.transform.position[2] = -5
 
@@ -390,10 +386,8 @@ function loop() {
 
     myCircle.transform.Copy(mySquare.transform);
     myCircle.transform.position[2] = -15;
-    myCircle.transform.scale = [
-        250,
-        250,
-        1];
+    myCircle.transform.scale = [testCanvas.width * 0.4,testCanvas.width * 0.4,1,1];
+
 
     myCamera.Size = [testCanvas.width,testCanvas.height];
     myCamera.transform.position = [0,0,-10];
