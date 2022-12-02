@@ -48,7 +48,6 @@ class TransForm {
 
     Copy(otherTransform){
         if (otherTransform.constructor.name == this.constructor.name){
-            console.log("Copying Constructor");
             vec4.copy(this.position, otherTransform.position);
             vec4.copy(this.rotation, otherTransform.rotation);
             vec4.copy(this.scale, otherTransform.scale);
@@ -373,6 +372,26 @@ void main() {
     }
 }
 
+
+class JSWebGlImage {
+    constructor(urlSource) {
+        this.imgElement = document.createElement("img");
+        this.LoadFailed = false;
+        this.Complete = false;
+
+        this.imgElement.addEventListener("load",(event) => {
+            this.Complete = true;
+            this.LoadFailed = true;
+        })
+        this.imgElement.addEventListener("error",(event) => {
+            this.Complete = true;
+            this.LoadFailed = true;
+        })
+        this.imgElement.src = urlSource;
+    }
+
+}
+
 class JSWebGlCanvasTexture {
     constructor(WebGlContext, HTMLCanvas) {
         this._parentContext = WebGlContext;
@@ -394,6 +413,18 @@ class JSWebGlCanvasTexture {
         )`;
         this.CanvasContext.fillRect(0,0,this._canvas.width,this._canvas.height);
         this.updateTexture();
+    }
+
+    setAsImage(JSWebGlImage){
+        if (JSWebGlImage.imgElement != null){
+            this._canvas.width = 100;
+            this._canvas.height = 100;
+
+            this.CanvasContext.clearRect(0,0,100,100);
+            this.CanvasContext.fillStyle = "rgba(77,255,113,0.57)";
+            this.CanvasContext.fillRect(0,0,100,100);
+            this.updateTexture();
+        }
     }
 
     updateTexture() {
@@ -441,7 +472,6 @@ class JSWebGlCamera {
         this.Size = [10, 10];
 
         this._parentContext = WebGlContext._canvasContext;
-        this._parentCanvas = this._parentContext.canvas;
 
         this.fov = 45 * Math.PI / 180;
         this.aspectRatio = this._parentContext.canvas.clientWidth / this._parentContext.canvas.clientHeight;
@@ -450,7 +480,6 @@ class JSWebGlCamera {
         this._projectionMatrix = mat4.create();
         this._viewMatrix = mat4.create();
 
-        this.pos = new WebGlVector3();
         this._updateMatrix();
     }
 

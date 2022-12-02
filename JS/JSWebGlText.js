@@ -4,24 +4,30 @@ class WebGlText {
         this._targetCanvas = document.createElement("canvas");
         this._parentContext = WebGlContext;
         this._canvasContext = this._targetCanvas.getContext("2d");
+
+        // WebGl Objects
         this._TextCanvasTexture = new JSWebGlCanvasTexture(this._parentContext,this._targetCanvas);;
         this._RenderSquare = new JSWebGlSquare(WebGlContext,[1,1,1,0.8]);
 
-        this.TextString = "";
-        this.Font = "arial";
-        this.FontSize = 100;
-        this.textAlign = "center";
-        this.fillStyle = "#ffffff";
-
         this.properties = {
+            style: {
+                fontSize: 100,
+                fontType: "arial",
+                textAlign: "center",
+                fontColour: "#ffffff"
+            },
+            strokeStyle: {
+                width: 3,
+                colour: [0,0,0,0]
+            },
             maxLength: 0,
-            maxHeight: 0
+            maxHeight: 0,
         }
     }
 
     // Get length of string with current properties
     _getRenderLength(string) {
-        this._canvasContext.font = this.FontSize + "px arial";
+        this._canvasContext.font = this.properties.style.fontSize + "px " + this.properties.style.fontType;
         this._canvasContext.textAlign = "left";
         this._canvasContext.textBaseline = "alphabetic";
 
@@ -32,7 +38,7 @@ class WebGlText {
     }
 
     // Splits string into words
-    // Includes length of each in their render size
+    // Includes length of each split
     _splitIntoParts(string) {
         // Return list of words
         let returnList = []
@@ -69,7 +75,9 @@ class WebGlText {
         return returnList
     }
 
-    _setMultiLineText(string) {
+    // Set the target string and update texture
+    SetText(string) {
+        this.TextString = string;
         let splitList = this._splitIntoParts(string);
 
         let lines = [];
@@ -174,65 +182,61 @@ class WebGlText {
         }
 
         //Height
-        renderHeight = this.FontSize * lines.length;
+        renderHeight = this.properties.style.fontSize * lines.length;
 
         this._targetCanvas.width = renderWidth;
         this._targetCanvas.height = renderHeight;
 
         //Set wanted font styles/properties
-        this._TextCanvasTexture.CanvasContext.fillStyle = this.fillStyle;
-        this._TextCanvasTexture.CanvasContext.textAlign = this.textAlign;
-        this._TextCanvasTexture.CanvasContext.font = this.FontSize + "px arial";
+        this._TextCanvasTexture.CanvasContext.fillStyle = this.properties.style.fontColour;
+        this._TextCanvasTexture.CanvasContext.textAlign = this.properties.style.textAlign;
+        let size = this.properties.style.fontSize;
+        let fontType = this.properties.style.fontType;
+
+        this._TextCanvasTexture.CanvasContext.font = size + "px " + fontType;
         this._TextCanvasTexture.CanvasContext.textBaseline = "bottom";
 
-        let lineY = this.FontSize;
+        let lineY = size;
         for (let i = 0; i < lines.length; i++){
-            this._canvasContext.fillStyle = this.fillStyle;
+            this._canvasContext.fillStyle = this.properties.style.fontColour;
             this._canvasContext.fillText(lines[i],
                 this._targetCanvas.width / 2,
                 lineY,
-                this._targetCanvas.width * 0.95)
-            ;
-            lineY += this.FontSize;
+                this._targetCanvas.width * 0.95
+            );
+
+
+            let strokeC = this.properties.strokeStyle.colour;
+            let strokeW = this.properties.strokeStyle.width;
+
+            // Only stroke/outline if there is a width
+            if (strokeW > 0) {
+                this._canvasContext.strokeStyle = `rgba(
+            ${strokeC[0] * 255},
+            ${strokeC[1] * 255},
+            ${strokeC[2] * 255},
+            ${strokeC[3]}
+            )`;
+                this._canvasContext.lineWidth = strokeW;
+                this._canvasContext.stroke();
+
+                this._canvasContext.strokeText(lines[i],
+                    this._targetCanvas.width / 2,
+                    lineY,
+                    this._targetCanvas.width * 0.95
+                )
+
+                lineY += this.properties.style.fontSize;
+            }
         }
 
 
         this._TextCanvasTexture.updateTexture();
     }
 
-    _setText(newString) {
-        // Find basic text length
-        // Uses default text properties as measureText() is affected by them
-        this.TextString = newString;
-        this._canvasContext.font = this.FontSize + "px arial";
-        this._canvasContext.textAlign = "left";
-        let textWidth = 0;
-
-        let measureMetric = this._canvasContext.measureText(this.TextString);
-        textWidth = measureMetric.actualBoundingBoxLeft + measureMetric.actualBoundingBoxRight;
-        console.log(`Text width = ${textWidth}`);
-
-        this._targetCanvas.width = textWidth * 2;
-
-        this._canvasContext.fillStyle = this.fillStyle;
-        this._canvasContext.textAlign = this.textAlign;
-        this._canvasContext.font = this.FontSize + "px arial";
-        this._canvasContext.textBaseline = "bottom";
 
 
-        this._canvasContext.beginPath();
-        this._canvasContext.fillStyle = "#aeffed";
-        this._canvasContext.fillRect(0, 0, this._targetCanvas.width, this._targetCanvas.height);
-        this._canvasContext.closePath();
-
-
-        this._canvasContext.fillStyle = "#000000";
-        this._canvasContext.fillText(this.TextString,
-            this._targetCanvas.width / 2,
-            0 + this.FontSize);
-
-    }
-
+    // Render Text Texture on WebGl Surface
     draw(WebGlShaderProgram){
         this._RenderSquare.setTexture(this._TextCanvasTexture);
         this._RenderSquare.transform = this.Transform;
@@ -257,7 +261,16 @@ let myShaderProgram = new JSWebGLShaderProgram(MyWebGlContext);
 let myCamera = new JSWebGlCamera(MyWebGlContext);
 myCamera._getInverseMatrix();
 
+
+let myImage = new JSWebGlImage("../Assets/cat.jpg");
+let myTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.createElement("canvas"));
+
+myTexture.setAsImage(myImage);
+
 let mySquare = new JSWebGlSquare(MyWebGlContext,[1,0.5,0.5,1]);
+
+mySquare.setTexture(JSWebGlCanvasTexture);
+
 let mySquare2 = new JSWebGlSquare(MyWebGlContext,[0,0,0,1]);
 let TextSquare = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5,1.0,0.5,1]);
@@ -271,9 +284,9 @@ let TestWebGlText = new WebGlText(MyWebGlContext);
 let testString = "日本語でテクストを書けるのか？";
 TestWebGlText.properties.maxLength = testCanvas.width;
 TestWebGlText.FontSize = testCanvas.height * 0.1
-TestWebGlText._setMultiLineText(testString);
-TestWebGlText._setMultiLineText(testString);
-TestWebGlText._setMultiLineText(testString);
+TestWebGlText.properties.strokeStyle.colour = [0,0,0,1];
+TestWebGlText.properties.strokeStyle.width = 2;
+TestWebGlText.SetText(testString);
 
 
 function loop() {
