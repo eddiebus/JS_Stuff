@@ -262,9 +262,12 @@ let myCamera = new JSWebGlCamera(MyWebGlContext);
 myCamera._getInverseMatrix();
 
 
-let imgSource2 = window.location.origin + "/Assets/cat.jpg"
-let myImage = new JSWebGlImage("https://eddiebus.github.io/JS_Stuff/Assets/cat.jpg");
+let imgSource2 = window.location.href + "/Assets/cat.jpg"
+let myImage = new JSWebGlImage(imgSource2);
+
+console.log(window.location.href);
 console.log(window.location);
+console.log(new URL("https://eddiebus.github.io/JS_Stuff/"));
 let myTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.createElement("canvas"));
 myTexture.clear([1,0.5,0,0.2])
 myTexture.setAsImage(myImage);
