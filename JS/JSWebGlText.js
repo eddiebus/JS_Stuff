@@ -262,7 +262,7 @@ let myCamera = new JSWebGlCamera(MyWebGlContext);
 myCamera._getInverseMatrix();
 
 
-let myImage = new JSWebGlImage("https://images-prod.dazeddigital.com/778/azure/dazed-prod/1330/4/1334197.jpg");
+let myImage = new JSWebGlImage("https://i1.sndcdn.com/avatars-wmzPxL4TeWP4ccOn-LMJA2Q-t500x500.jpg");
 
 let myTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.createElement("canvas"));
 myTexture.clear([1,0.5,0,0.2])
@@ -283,11 +283,11 @@ let touchSquareMid = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let rotationVector = new WebGlVector3(0,0,0);
 
 let TestWebGlText = new WebGlText(MyWebGlContext);
-let testString = "ニャン子";
+let testString = "Random Graphics";
 TestWebGlText.properties.maxLength = testCanvas.width;
 TestWebGlText.properties.style.fontSize = testCanvas.width * 0.15;
-TestWebGlText.properties.strokeStyle.colour = [1,1,1,1];
-TestWebGlText.properties.strokeStyle.width = 0.5;
+TestWebGlText.properties.strokeStyle.colour = [1,0.4,0,1];
+TestWebGlText.properties.strokeStyle.width = 2;
 TestWebGlText.SetText(testString);
 
 
