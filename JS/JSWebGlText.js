@@ -27,6 +27,17 @@ class WebGlText extends  JSWebGlSquare{
         this.ExternalTexture = this._TextCanvasTexture;
     }
 
+    // Set font using font face#
+    // Refresh texture when font is loaded
+    SetFontAsFontFace(newFontFace){
+        if (newFontFace.constructor.name == "FontFace"){
+            newFontFace.load().then((result) => {
+                this.properties.style.fontType = newFontFace.family;
+                this.SetText(this.TextString);
+            })
+        }
+    }
+
     // Get length of string with current properties
     _getRenderLength(string) {
         this._canvasContext.font = this.properties.style.fontSize + "px " + this.properties.style.fontType;
@@ -190,6 +201,7 @@ class WebGlText extends  JSWebGlSquare{
         this._targetCanvas.height = renderHeight;
 
         //Set wanted font styles/properties
+        this._TextCanvasTexture.CanvasContext.clearRect(0,0,renderWidth,renderHeight);
         this._TextCanvasTexture.CanvasContext.fillStyle = this.properties.style.fontColour;
         this._TextCanvasTexture.CanvasContext.textAlign = this.properties.style.textAlign;
         let size = this.properties.style.fontSize;
@@ -232,7 +244,6 @@ class WebGlText extends  JSWebGlSquare{
             }
         }
 
-
         this._TextCanvasTexture.updateTexture();
     }
 
@@ -261,7 +272,6 @@ let myImage = new JSWebGlImage(
 );
 
 let myTexture = new JSWebGlCanvasTexture(MyWebGlContext,document.createElement("canvas"));
-myTexture.clear([1,0.5,0,0.2])
 myTexture.setAsImage(myImage,1);
 
 
@@ -277,15 +287,29 @@ let touchSquareMid = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let rotationVector = new WebGlVector3(0,0,0);
 
 let TestWebGlText = new WebGlText(MyWebGlContext);
-let testString = "WebGl Graphics";
+let testString = "日本語で書けるのか？?";
 TestWebGlText.properties.maxLength = testCanvas.width;
 TestWebGlText.properties.style.fontSize = testCanvas.width * 0.15;
 TestWebGlText.properties.strokeStyle.colour = [1,0.4,0,1];
 TestWebGlText.properties.strokeStyle.width = 2;
-TestWebGlText.SetText(testString);
+
+
+
+let KiwiMaruFontFace = new FontFace('KiwiMaru','url(../Assets/Fonts/Kiwi_Maru/KiwiMaru-Regular.ttf)');
+let Dela_Gothic = new FontFace('Dela_Gothic','url(../Assets/Fonts/Dela_Gothic/DelaGothicOne-Regular.ttf)');
+
+
+TestWebGlText.SetFontAsFontFace(Dela_Gothic);
+
+
+
 
 
 function loop() {
+    TestWebGlText.SetText(testString);
+
+
+
     if (JSGameInput.GetKey("e").Press) {
         rotationVector.z += Time.deltaTime * 0.3;
     }
@@ -359,7 +383,7 @@ function loop() {
         }
     }
 
-    MyWebGlContext.clear([0,0.5,1,1]);
+    MyWebGlContext.clear([0,0.5,1,0.2]);
 
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
@@ -368,8 +392,8 @@ function loop() {
     touchSquare.transform.scale = [200,200,200,1];
     touchSquareMid.transform.scale = [50,50,50,1];
 
-    mySquare2.transform.scale = [testCanvas.width * 0.5,testCanvas.width * 0.5,1,1];
-    mySquare.transform.scale = [testCanvas.width * 0.4,testCanvas.width * 0.4,1,1];
+    mySquare2.transform.scale = [testCanvas.width * 0.5,testCanvas.width * 0.5,1,0.5];
+    mySquare.transform.scale = [testCanvas.width * 0.4,testCanvas.width * 0.4,1,0.5];
     mySquare2.transform.position[2] = -10
     mySquare.transform.position[2] = -5
 

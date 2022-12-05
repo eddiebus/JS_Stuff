@@ -1,3 +1,13 @@
+@font-face {
+    font-family: KiwiMaru;
+    src: url("../Assets/Fonts/Kiwi_Maru/KiwiMaru-Regular.ttf");
+}
+
+@font-face {
+    font-family: Dela_Gothic;
+    src: url("../Assets/Fonts/Dela_Gothic/DelaGothicOne-Regular.ttf");
+}
+
 body {
     margin: 0;
 }
