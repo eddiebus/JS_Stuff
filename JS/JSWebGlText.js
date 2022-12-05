@@ -287,7 +287,7 @@ let touchSquareMid = new JSWebGlSquare(MyWebGlContext,[1,1,1,1]);
 let rotationVector = new WebGlVector3(0,0,0);
 
 let TestWebGlText = new WebGlText(MyWebGlContext);
-let testString = "日本語で書けるのか？?";
+let testString = "日本語で書けるのか？?このフォントで？";
 TestWebGlText.properties.maxLength = testCanvas.width;
 TestWebGlText.properties.style.fontSize = testCanvas.width * 0.15;
 TestWebGlText.properties.strokeStyle.colour = [1,0.4,0,1];
@@ -296,7 +296,7 @@ TestWebGlText.properties.strokeStyle.width = 2;
 
 
 let KiwiMaruFontFace = new FontFace('KiwiMaru','url(../Assets/Fonts/Kiwi_Maru/KiwiMaru-Regular.ttf)');
-let Dela_Gothic = new FontFace('Dela_Gothic','url(../Assets/Fonts/Dela_Gothic/DelaGothicOne-Regular.ttf)');
+let Dela_Gothic = new FontFace('Dela_Gothic','url(https://eddiebus.github.io/JS_Stuff/Assets/Fonts/Dela_Gothic/DelaGothicOne-Regular.ttf)');
 
 
 TestWebGlText.SetFontAsFontFace(Dela_Gothic);
@@ -307,8 +307,6 @@ TestWebGlText.SetFontAsFontFace(Dela_Gothic);
 
 function loop() {
     TestWebGlText.SetText(testString);
-
-
 
     if (JSGameInput.GetKey("e").Press) {
         rotationVector.z += Time.deltaTime * 0.3;
