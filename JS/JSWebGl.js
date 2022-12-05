@@ -743,7 +743,7 @@ class JSWebGlCircle extends JSWebGlMesh {
 
         // Add points around center
         // Add indecies
-        for (let i = 0; i <= this.sections + 5; i++) {
+        for (let i = 0; i <= this.sections; i++) {
             let Angle = i * DegToRadians(360.0 / sections);
 
             let vertX = Math.cos(Angle) * 1;
