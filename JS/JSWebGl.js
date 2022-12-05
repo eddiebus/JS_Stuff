@@ -968,6 +968,7 @@ class JSWebGlRenderQueue{
         }
     }
 
+    // Sort Objects and draw them in Z order
     Draw(WebGlShader,WebGlCamera){
         WebGlShader.use();
         WebGlCamera.setToShader(WebGlShader);
