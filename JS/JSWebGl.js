@@ -132,9 +132,11 @@ class TransForm {
 class WebGlContext {
     constructor(HTMLCanvas, antiAlias = true) {
         this._canvasContext = HTMLCanvas.getContext("webgl2", {
-            antialias: antiAlias
+            antialias: antiAlias,
+            premultipliedAlpha: false
         });
         this._canvas = HTMLCanvas;
+        this._canvas.style.backgroundColor = "rgb(0,0,0)"
 
         if (this._canvasContext === null) {
             console.log("WebGL error: Failed to get Canvas Context");
@@ -167,7 +169,6 @@ class WebGlContext {
             this._Tick();
         })
     }
-
 
     _updateSize() {
         if (this.resolutionScale < 0.25) {
@@ -271,7 +272,6 @@ void main(void) {
         this.fragShaderCode = `
 precision mediump float;
 
-varying   vec4 vColour;
 varying   vec2 vTextCoord;
 
 uniform int toTexture;
@@ -300,7 +300,6 @@ void main() {
             program: this._shaderProgram,
             attribLocations: {
                 vertexPosition: this._parentContext.getAttribLocation(this._shaderProgram, 'coordinates'),
-                colour: this._parentContext.getAttribLocation(this._shaderProgram, 'colour'),
                 textureCoord: this._parentContext.getAttribLocation(this._shaderProgram, 'texCoord')
             },
             uniformLocations: {
@@ -372,7 +371,6 @@ void main() {
     }
 }
 
-
 class JSWebGlImage {
 
     constructor(urlSource) {
@@ -405,9 +403,16 @@ class JSWebGlImage {
 }
 
 class JSWebGlCanvasTexture {
-    constructor(WebGlContext, HTMLCanvas) {
+    constructor(WebGlContext, HTMLCanvas = null) {
         this._parentContext = WebGlContext;
-        this._canvas = HTMLCanvas;
+
+        // Check if link to existing canvas
+        // Else ake new canvas
+        if (HTMLCanvas) {
+            this._canvas = HTMLCanvas;
+        }
+
+        else { this._canvas = document.createElement("canvas")}
         this.CanvasContext = this._canvas.getContext("2d");
         this._canvas.width = 100;
         this._canvas.height = 100;
@@ -428,7 +433,7 @@ class JSWebGlCanvasTexture {
         this.updateTexture();
     }
 
-    setAsImage(JSWebGlImage) {
+    setAsImage(JSWebGlImage,opacity = 1) {
         if (JSWebGlImage.imgElement != null) {
             JSWebGlImage.GetLoadPromise().then(()=>{
                 if (JSWebGlImage.LoadFailed) {
@@ -440,11 +445,11 @@ class JSWebGlCanvasTexture {
                 this._canvas.height = height;
 
                 this.CanvasContext.clearRect(0, 0, width, height);
-                this.CanvasContext.fillStyle = "rgba(77,255,113,0.57)";
-                this.CanvasContext.fillRect(0, 0, width, height);
+                this.CanvasContext.globalAlpha = opacity;
                 this.CanvasContext.drawImage(
                     JSWebGlImage.imgElement,0,0,
                     width,height);
+
                 this.updateTexture();
             })
 
@@ -487,6 +492,13 @@ class JSWebGlCanvasTexture {
         // Done Texture Work, Unbind texture
         this._parentContext._canvasContext.bindTexture(this._parentContext._canvasContext.TEXTURE_2D, null);
     }
+
+    GetCanvasContext(){
+        return this.CanvasContext;
+    }
+    GetCanvas(){
+        return this._canvas;
+    }
 }
 
 // 2D Camera Class
@@ -507,6 +519,19 @@ class JSWebGlCamera {
         this._updateMatrix();
     }
 
+    GetViewMatrix(){
+        this._updateMatrix();
+
+        let returnMatrix = mat4.create();
+
+        mat4.multiply(
+            returnMatrix,
+            this._viewMatrix,
+            this._projectionMatrix
+        );
+
+        return returnMatrix;
+    }
     _getInverseMatrix() {
         this._updateMatrix();
 
@@ -574,17 +599,121 @@ class JSWebGlCamera {
     }
 }
 
-class JSWebGlCircle {
-    constructor(WebGlContext, colour, sections = 100) {
+class JSWebGlMesh{
+    constructor(WebGlContext) {
         this._parentContext = WebGlContext._canvasContext;
-        this.canvas = document.createElement("canvas");
-        this.Texture = new JSWebGlCanvasTexture(WebGlContext, this.canvas);
+        this.Texture = new JSWebGlCanvasTexture(WebGlContext);
+        this.ExternalTexture = null;
         this.transform = new TransForm();
 
         this._vertexBuffer = this._parentContext.createBuffer();
         this._indexBuffer = this._parentContext.createBuffer();
         this._texCoordBuffer = this._parentContext.createBuffer();
-        this._colourBuffer = this._parentContext.createBuffer();
+
+        this.polyCount = 0;
+        this.indexCount = 0;
+    }
+
+    // Set vertex buffer for this mesh
+    _setVertexBuffer(vertexArray){
+
+        // write points to buffer
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            this._vertexBuffer
+        );
+
+        this._parentContext.bufferData(
+            this._parentContext.ARRAY_BUFFER,
+            new Float32Array(vertexArray),
+            this._parentContext.STATIC_DRAW
+        );
+
+        this._parentContext.bindBuffer(this._parentContext.ARRAY_BUFFER, null);
+
+        this.polyCount = vertexArray.length/3;
+    }
+
+    _setTextureCoords(textCoordArray){
+        // write texCoords
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            this._texCoordBuffer
+        );
+
+        this._parentContext.bufferData(
+            this._parentContext.ARRAY_BUFFER,
+            new Float32Array(textCoordArray),
+            this._parentContext.STATIC_DRAW
+        );
+
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            null
+        );
+    }
+
+    _setIndexBuffer(indexArray){
+
+    }
+
+    setTexture(Texture){
+        this.ExternalTexture = Texture;
+    }
+
+    draw_mesh(WebGlShaderProgram,DrawMethod,drawCount){
+        WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);
+
+        // Bind Tex Coord
+        this._parentContext.bindBuffer(
+            this._parentContext.ARRAY_BUFFER,
+            this._texCoordBuffer
+        );
+        this._parentContext.vertexAttribPointer(
+            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord,
+            2,
+            this._parentContext.FLOAT,
+            false, 0, 0
+        );
+        this._parentContext.enableVertexAttribArray(
+            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord
+        );
+
+        WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
+
+        if (this.ExternalTexture) {
+            this._parentContext.activeTexture(this._parentContext.TEXTURE0);
+
+            this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.ExternalTexture.Texture);
+
+            this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
+        } else {
+            this._parentContext.activeTexture(this._parentContext.TEXTURE0);
+
+            this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.Texture.Texture);
+
+            this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
+        }
+
+        if (DrawMethod == WebGlShaderProgram._parentContext.TRIANGLES) {
+            this._parentContext.drawElements(
+                this._parentContext.TRIANGLES,
+                this.indexCount,
+                this._parentContext.UNSIGNED_SHORT, 0);
+        }
+        else {
+            this._parentContext.drawArrays(
+                this._parentContext.TRIANGLE_FAN,
+                0,
+                this.polyCount
+            );
+        }
+    }
+}
+
+class JSWebGlCircle extends  JSWebGlMesh {
+    constructor(WebGlContext, colour, sections = 100) {
+        super(WebGlContext);
 
         let vertices = [];
         let textureCoord = [];
@@ -598,6 +727,10 @@ class JSWebGlCircle {
         vertices.push(0);
         vertices.push(0);
         vertices.push(0);
+
+        // Add center texture position
+        textureCoord.push(0.5);
+        textureCoord.push(0.5);
 
         vColours.push(colour[0]);
         vColours.push(colour[1]);
@@ -616,11 +749,11 @@ class JSWebGlCircle {
             vertices.push(vertY);
             vertices.push(0);
 
-            let textX = 0.5 + vertX;
-            let texY = 0.5 + vertY;
+            let texX = 0.5 + (Math.cos(Angle) * 0.5);
+            let texY = 0.5 + (Math.sin(-Angle) * 0.5); //Flip y texture pos
 
-            textureCoord.push(vertX);
-            textureCoord.push(vertY);
+            textureCoord.push(texX);
+            textureCoord.push(texY);
 
             vColours.push(colour[0]);
             vColours.push(colour[1]);
@@ -632,126 +765,37 @@ class JSWebGlCircle {
         this.vCount = vertices.length;
         console.log(`This circle has ${this.vCount} vertices`);
         console.log(`This circle has ${sections} sections`);
-        this._indexCount = indices.length;
 
 
-        // write points to buffer
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._vertexBuffer
-        );
+        // Vertex points
+        this._setVertexBuffer(vertices);
 
-        this._parentContext.bufferData(
-            this._parentContext.ARRAY_BUFFER,
-            new Float32Array(vertices),
-            this._parentContext.STATIC_DRAW
-        );
-
-        this._parentContext.bindBuffer(this._parentContext.ARRAY_BUFFER, null);
-
-        //write indices to buffer
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            this._indexBuffer
-        );
-
-        this._parentContext.bufferData(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            new Uint16Array(indices),
-            this._parentContext.STATIC_DRAW
-        );
-
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
-            null
-        );
-
-        // write colour points
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._colourBuffer
-        );
-
-        this._parentContext.bufferData(
-            this._parentContext.ARRAY_BUFFER,
-            new Float32Array(vColours),
-            this._parentContext.STATIC_DRAW
-        );
-
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            null
-        );
-
-        // write texCoords
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._texCoordBuffer
-        );
-
-        this._parentContext.bufferData(
-            this._parentContext.ARRAY_BUFFER,
-            new Float32Array(textureCoord),
-            this._parentContext.STATIC_DRAW
-        );
-
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            null
-        );
+        this._setTextureCoords(textureCoord);
 
         this.Texture.clear([1, 1, 0, 1]);
+    }
+    setTexture(Texture) {
+        this.ExternalTexture = Texture;
     }
 
     draw(WebGlShaderProgram) {
         WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer, null);
 
-        // Bind Colour
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._colourBuffer
-        );
+        if (this.ExternalTexture) {
+            this._parentContext.activeTexture(this._parentContext.TEXTURE0);
 
-        this._parentContext.vertexAttribPointer(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.colour,
-            4,
-            this._parentContext.FLOAT,
-            false, 0, 0
-        );
+            this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.ExternalTexture.Texture);
 
-        // Bind Tex Coord
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._texCoordBuffer
-        );
+            this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
+        } else {
+            this._parentContext.activeTexture(this._parentContext.TEXTURE0);
 
-        this._parentContext.vertexAttribPointer(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord,
-            2,
-            this._parentContext.FLOAT,
-            false, 0, 0
-        );
-        this._parentContext.enableVertexAttribArray(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord
-        );
+            this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.Texture.Texture);
 
-        this._parentContext.enableVertexAttribArray(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.colour
-        );
+            this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
+        }
 
-        WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
-
-        this._parentContext.activeTexture(this._parentContext.TEXTURE0);
-
-        this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.Texture.Texture);
-
-        this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
-
-        this._parentContext.drawArrays(
-            this._parentContext.TRIANGLE_FAN,
-            0,
-            this.sections + 2
-        );
+        this.draw_mesh(WebGlShaderProgram,this._parentContext.TRIANGLE_FAN,this.sections - 2);
     }
 }
 
@@ -759,7 +803,7 @@ class JSWebGlSquare {
     //Input
     //WebGlContext - Parent context of this object
     //c - The colour of this square
-    constructor(WebGlContext, c) {
+    constructor(WebGlContext, c = [1,1,1,1]) {
         this._parentContext = WebGlContext._canvasContext;
         this.colour = c;
         this.Texture = new JSWebGlCanvasTexture(WebGlContext, document.createElement("canvas"));
@@ -873,28 +917,11 @@ class JSWebGlSquare {
     draw(WebGlShaderProgram) {
         WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);
 
-        // Bind Colour
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
-            this._colourBuffer
-        );
-
-        this._parentContext.vertexAttribPointer(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.colour,
-            4,
-            this._parentContext.FLOAT,
-            false, 0, 0
-        );
-        this._parentContext.enableVertexAttribArray(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.colour
-        );
-
         // Bind Tex Coord
         this._parentContext.bindBuffer(
             this._parentContext.ARRAY_BUFFER,
             this._texCoordBuffer
         );
-
         this._parentContext.vertexAttribPointer(
             WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord,
             2,
@@ -921,7 +948,6 @@ class JSWebGlSquare {
             this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
         }
 
-
         this._parentContext.drawElements(
             this._parentContext.TRIANGLES,
             this._indexCount,
@@ -929,6 +955,61 @@ class JSWebGlSquare {
     }
 }
 
+class JSWebGlRenderQueue{
+    constructor() {
+        this.Objects = []
+    }
+
+    SetObjects(ObjectArray){
+        for (let  i = 0; i < ObjectArray.length; i++)
+        {
+            let newItem = [ObjectArray[i],true]
+            this.Objects.push( newItem) ;
+        }
+    }
+
+    Draw(WebGlShader,WebGlCamera){
+        WebGlShader.use();
+        WebGlCamera.setToShader(WebGlShader);
+        // Find Z Depth
+        for (let i = 0; i < this.Objects.length; i++) {
+            let zDepth = 0;
+            let camTransform = WebGlCamera.GetViewMatrix();
+
+            let resultPos = vec4.create();
+
+            vec4.transformMat4(
+                resultPos,
+                this.Objects[i][0].transform.position,
+                camTransform
+            );
+
+            this.Objects[i][1] = resultPos[2];
+        }
+
+        for (let i = 0; i < this.Objects.length - 1; i++){
+            let thisDepth = this.Objects[i][1];
+            let thatDepth = this.Objects[i + 1][1];
+
+            if (thisDepth < thatDepth){
+                let tempObj = this.Objects[i];
+                this.Objects[i] = this.Objects[i+1];
+                this.Objects[i + 1 ] = tempObj;
+                i = -1;
+            }
+
+        }
+
+
+        WebGlShader.use()
+        WebGlCamera.setToShader(WebGlShader);
+
+        for (let i = 0; i < this.Objects.length; i++){
+            this.Objects[i][0].draw(WebGlShader);
+        }
+
+    }
+}
 
 
 
