@@ -280,8 +280,10 @@ let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5, 1.0, 0.5, 1]);
 
 myCircle.setTexture(myTexture);
 
-let touchSquare = new JSWebGlSquare(MyWebGlContext, [1, 1, 1, 0.2]);
-let touchSquareMid = new JSWebGlSquare(MyWebGlContext, [1, 1, 1, 1]);
+let touchSquare = new JSWebGlSquare(MyWebGlContext, [0, 0, 0, 0.5]);
+let touchSquareMid = new JSWebGlSquare(MyWebGlContext, [0, 1, 0, 0.2]);
+let touchCircle = new JSWebGlCircle(MyWebGlContext, [1, 0, 0, 1]);
+
 
 let rotationVector = new WebGlVector3(0, 0, 0);
 
@@ -335,22 +337,18 @@ function loop() {
             let touchPos = [touchObj.endPos[0], touchObj.startPos[1]];
             let touchPosWorld = myCamera.screenToWorld(touchObj.startPos);
 
-            touchSquare.transform.position = touchPosWorld;
-            touchSquare.transform.position[2] = -2;
+            touchSquare.transform.position = myCamera.screenToWorld(touchObj.startPos);
+            touchSquare.transform.position[2] = -20;
 
-            touchSquareMid.transform.position = touchPosWorld;
-            touchSquareMid.transform.position[2] = -1;
-
-            console.log(
-                myCamera.screenToWorld(touchObj.endPos)
-            )
-            console.log(
-                mySquare2.transform.position
-            )
+            touchSquareMid.transform.position = myCamera.screenToWorld(touchObj.endPos);
+            touchSquareMid.transform.position[2] = -10;
         }
 
         if (testCanvas_TouchInput.touch[1].isPressed) {
             rotationVector.z += Time.deltaTime;
+
+            let touchObj = testCanvas_TouchInput.touch[1];
+            touchCircle.transform.position = myCamera.screenToWorld(touchObj.endPos);
         }
 
         if (JSGameInput.GetKey("w").Press) {
@@ -370,7 +368,7 @@ function loop() {
         }
     }
 
-    MyWebGlContext.clear([0, 0.5, 1, 0.2]);
+    MyWebGlContext.clear([1, 1, 1, 1]);
 
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
@@ -378,6 +376,7 @@ function loop() {
 
     touchSquare.transform.scale = [200, 200, 200, 1];
     touchSquareMid.transform.scale = [50, 50, 50, 1];
+    touchCircle.transform.scale = [100,100,1,1];
 
     mySquare2.transform.scale = [testCanvas.width * 0.5, testCanvas.width * 0.5, 1, 0.5];
     mySquare.transform.scale = [testCanvas.width * 0.4, testCanvas.width * 0.4, 1, 0.5];
@@ -391,7 +390,6 @@ function loop() {
     myCircle.transform.position[2] = -1;
     myCircle.transform.scale = [testCanvas.width * 0.4, testCanvas.width * 0.4, 1, 1];
 
-
     myCamera.Size = [testCanvas.width, testCanvas.height];
     myCamera.transform.position = [0, 0, -10];
 
@@ -399,14 +397,26 @@ function loop() {
 
 
     let rQueue = new JSWebGlRenderQueue();
-    rQueue.SetObjects([myCircle, mySquare2, mySquare, TestWebGlText]);
-    rQueue.Draw(myShaderProgram, myCamera);
+    rQueue.SetObjects([myCircle, mySquare2, TestWebGlText,mySquare ]);
+    rQueue.Draw(myShaderProgram,myCamera);
 
+
+    let uiObj = [];
+
+    MyWebGlContext.clearDepth();
 
     if (testCanvas_TouchInput.touch[0].isPressed) {
-        touchSquareMid.draw(myShaderProgram);
-        touchSquare.draw(myShaderProgram);
+        uiObj.push(touchSquareMid,touchSquare);
     }
+
+    if (testCanvas_TouchInput.touch[1].isPressed) {
+        uiObj.push(touchCircle)
+    }
+
+    rQueue.SetObjects(uiObj);
+    rQueue.Draw(myShaderProgram,myCamera);
+
+
 
     window.requestAnimationFrame(() => {
         loop();

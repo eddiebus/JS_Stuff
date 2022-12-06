@@ -183,6 +183,7 @@ class WebGlContext {
 
     clearDepth(){
         this._canvasContext.clearDepth(1);
+        this._canvasContext.clear(this._canvasContext.DEPTH_BUFFER_BIT);
     }
     // Clear canvas to solid color
     clear(newColour = [0, 0, 0, 1]) {
@@ -196,7 +197,7 @@ class WebGlContext {
         );
 
         this._canvasContext.enable(this._canvasContext.DEPTH_TEST);
-        this._canvasContext.depthFunc(this._canvasContext.LEQUAL);
+        this._canvasContext.depthFunc(this._canvasContext.LESS);
         this._canvasContext.disable(this._canvasContext.CULL_FACE);
 
 
@@ -834,10 +835,14 @@ class JSWebGlRenderQueue{
     }
 
     SetObjects(ObjectArray){
+        if (ObjectArray.constructor.name != Array().constructor.name){
+            throw "Render Queue Error| Input is not of type: Array";
+        }
+        this.Objects = [];
         for (let  i = 0; i < ObjectArray.length; i++)
         {
             let newItem = [ObjectArray[i],true]
-            this.Objects.push( newItem) ;
+            this.Objects.push(newItem) ;
         }
     }
 
@@ -864,22 +869,20 @@ class JSWebGlRenderQueue{
         for (let i = 0; i < this.Objects.length - 1; i++){
             let thisDepth = this.Objects[i][1];
             let thatDepth = this.Objects[i + 1][1];
-
-            if (thisDepth < thatDepth){
+            if (thisDepth > thatDepth){
                 let tempObj = this.Objects[i];
                 this.Objects[i] = this.Objects[i+1];
-                this.Objects[i + 1 ] = tempObj;
+                this.Objects[i + 1] = tempObj;
                 i = -1;
             }
-
         }
-
 
         WebGlShader.use()
         WebGlCamera.setToShader(WebGlShader);
 
         for (let i = 0; i < this.Objects.length; i++){
             this.Objects[i][0].draw(WebGlShader);
+            console.log(this.Objects[i][1]);
         }
 
     }
