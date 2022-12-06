@@ -89,6 +89,7 @@ class WebGlText extends JSWebGlSquare {
     // Set the target string and update texture
     SetText(string) {
         document.fonts.ready.then(() => {
+
             this.TextString = string;
             let splitList = this._splitIntoParts(string);
 
@@ -270,10 +271,10 @@ let myImage = new JSWebGlImage(
 );
 
 let myTexture = new JSWebGlCanvasTexture(MyWebGlContext, document.createElement("canvas"));
-myTexture.setAsImage(myImage, 0.1);
+myTexture.setAsImage(myImage, 1);
 
 
-let mySquare = new JSWebGlSquare(MyWebGlContext, [1, 0, 0, 1]);
+let mySquare = new JSWebGlSquare(MyWebGlContext, [1, 0, 0, 0.5]);
 let mySquare2 = new JSWebGlSquare(MyWebGlContext, [1, 1, 1, 1]);
 let myCircle = new JSWebGlCircle(MyWebGlContext, [0.5, 1.0, 0.5, 1]);
 
@@ -297,6 +298,7 @@ TestWebGlText.properties.style.fontType = "Dela_Gothic";
 
 function loop() {
     TestWebGlText.SetText(testString);
+
 
     if (JSGameInput.GetKey("e").Press) {
         rotationVector.z += Time.deltaTime * 0.3;
