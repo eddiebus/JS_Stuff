@@ -295,7 +295,9 @@ TestWebGlText.properties.strokeStyle.colour = [1, 0.4, 0, 1];
 TestWebGlText.properties.strokeStyle.width = 2;
 TestWebGlText.properties.style.fontType = "Dela_Gothic";
 
-
+window.addEventListener("load", (event) => {
+    console.log("Page Loaded");
+})
 
 
 function loop() {

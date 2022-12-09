@@ -882,7 +882,6 @@ class JSWebGlRenderQueue{
 
         for (let i = 0; i < this.Objects.length; i++){
             this.Objects[i][0].draw(WebGlShader);
-            console.log(this.Objects[i][1]);
         }
 
     }
