@@ -91,13 +91,12 @@ class JSGameTouch {
 
             let x = myTouch.pageX - this._targetElementRect.left;
             x -= this._targetElementRect.width / 2;
-            x /= this._targetElementRect.width / 2
             let y = this._targetElementRect.height -  (myTouch.pageY - this._targetElementRect.top);
             y -= this._targetElementRect.height/2;
-            y /= this._targetElementRect.height/2;
 
 
             this.startPos = [x,y];
+            this._lastPos = [x,y];
             this.endPos = [x,y];
             this.Down = true;
             this.isPressed = true;
@@ -115,11 +114,9 @@ class JSGameTouch {
             this._targetElementRect = this._targetElement.getBoundingClientRect();
 
             let x = myTouch.pageX - this._targetElementRect.left;
-            x -= this._targetElementRect.width / 2;
-            x /= this._targetElementRect.width / 2;
+            x -= this._targetElementRect.width/2;
             let y = this._targetElementRect.height -  (myTouch.pageY - this._targetElementRect.top);
             y -= this._targetElementRect.height/2;
-            y /= this._targetElementRect.height/2;
 
             this.endPos = [x,y];
 
@@ -133,6 +130,8 @@ class JSGameTouch {
                 this.endPos[0] - this.startPos[0],
                 this.endPos[1] - this.startPos[1]
             ]
+
+            console.log(this.distanceVector);
 
             this.dirVector = GetNormalisedVector(this.distanceVector);
             this._lastPos = this.endPos;
@@ -381,3 +380,186 @@ class JSGame_InputSystem {
 
 const JSGameInput = new JSGame_InputSystem();
 
+
+// Testing
+let testCanvas = document.getElementById("Canvas");
+let testCanvas_MouseInput = new JSGameMouseInput(testCanvas);
+testCanvas_MouseInput.locked = false;
+
+let testCanvas_TouchInput = new JSGameTouchInput(testCanvas);
+let MyWebGlContext = new WebGlContext(testCanvas);
+
+
+MyWebGlContext.setCanFullScreen(true);
+MyWebGlContext.resolutionScale = 1;
+
+let myShaderProgram = new JSWebGLShader(MyWebGlContext);
+let myCamera = new JSWebGlOrthoCamera(MyWebGlContext);
+myCamera._getInverseMatrix();
+
+let UICam = new JSWebGlUICamera(MyWebGlContext);
+
+
+
+let myImage = new JSWebGlImage(
+    "https://is3-ssl.mzstatic.com/image/thumb/Purple111/v4/cd/7f/f0/cd7ff0df-cb1f-8d10-6c4a-9cde28f2c5a5/source/256x256bb.jpg"
+);
+
+let myTexture = new JSWebGlCanvasTexture(MyWebGlContext, document.createElement("canvas"));
+myTexture.setAsImage(myImage, 1);
+
+
+let mySquare = new JSWebGlSquare(MyWebGlContext, myShaderProgram,[1, 0, 0, 0.5]);
+let mySquare2 = new JSWebGlSquare(MyWebGlContext, myShaderProgram,[1, 1, 1, 1]);
+
+let myCircle = new JSWebGlCircle(MyWebGlContext, myShaderProgram,[0.5, 1.0, 0.5, 1]);
+myCircle.setTexture(myTexture);
+
+let touchSquare = new JSWebGlSquare(MyWebGlContext, myShaderProgram,[0, 0, 0, 0.5]);
+let touchSquareMid = new JSWebGlSquare(MyWebGlContext,myShaderProgram, [0, 1, 0, 0.2]);
+let touchCircle = new JSWebGlCircle(MyWebGlContext, myShaderProgram,[1, 0, 0, 1]);
+
+
+let rotationVector = new WebGlVector3(0, 0, 0);
+
+let TestWebGlText = new WebGlText(MyWebGlContext,myShaderProgram);
+let testString = "日本語で書けるのか？?このフォントで？";
+TestWebGlText.properties.maxLength = testCanvas.width;
+TestWebGlText.properties.style.fontSize = testCanvas.width * 0.15;
+TestWebGlText.properties.strokeStyle.colour = [1, 0.4, 0, 1];
+TestWebGlText.properties.strokeStyle.width = 2;
+TestWebGlText.properties.style.fontType = "Dela_Gothic";
+
+window.addEventListener("load", (event) => {
+    console.log("Page Loaded");
+})
+
+
+function loop() {
+    TestWebGlText.SetText(testString);
+
+
+    if (JSGameInput.GetKey("e").Press) {
+        rotationVector.z += Time.deltaTime * 0.3;
+    }
+
+    if (MyWebGlContext.isFullscreen) {
+        let speed = 2;
+        let touchSpeed = 1;
+        let joystickSize = (MyWebGlContext.getSize().width/2) * 0.3;
+
+        if (testCanvas_TouchInput.touch[0].isPressed) {
+            let touchObj = testCanvas_TouchInput.touch[0];
+            let touchDisVector = testCanvas_TouchInput.touch[0].distanceVector;
+            let moveVector = [touchDisVector[0], touchDisVector[1]];
+
+            let moveRange = joystickSize;
+
+            for (let i = 0; i < moveVector.length; i++) {
+                let newValue = moveVector[i];
+                if (moveVector[i] > moveRange) {
+                    newValue = moveRange;
+                } else if (moveVector[i] < -moveRange) {
+                    newValue = -moveRange
+                }
+
+                newValue = newValue / moveRange;
+                moveVector[i] = newValue;
+            }
+
+            mySquare.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
+            mySquare.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
+
+            mySquare2.transform.position[0] += moveVector[0] * Time.deltaTime * touchSpeed;
+            mySquare2.transform.position[1] += moveVector[1] * Time.deltaTime * touchSpeed;
+
+            let touchPos = [touchObj.endPos[0], touchObj.startPos[1]];
+
+            touchSquare.transform.position = [touchObj.startPos[0],touchObj.startPos[1],0];
+            touchSquare.transform.scale = [joystickSize,joystickSize,0];
+            touchSquare.transform.position[2] = -20;
+
+            touchSquareMid.transform.position = [touchObj.endPos[0],touchObj.endPos[1],0];
+            touchSquareMid.transform.scale = [joystickSize/4,joystickSize/4,0];
+            touchSquareMid.transform.position[2] = -10;
+        }
+
+        if (testCanvas_TouchInput.touch[1].isPressed) {
+            rotationVector.z += Time.deltaTime;
+
+            let touchObj = testCanvas_TouchInput.touch[1];
+            touchCircle.transform.position = [0,0,0];
+            touchCircle.transform.scale = [joystickSize/2,joystickSize/2,0];
+        }
+
+        if (JSGameInput.GetKey("w").Press) {
+            mySquare.transform.position[1] += Time.deltaTime * speed;
+            mySquare2.transform.position[1] += Time.deltaTime * speed;
+        } else if (JSGameInput.GetKey("s").Press) {
+            mySquare.transform.position[1] -= Time.deltaTime * speed;
+            mySquare2.transform.position[1] -= Time.deltaTime * speed;
+        }
+
+        if (JSGameInput.GetKey("a").Press) {
+            mySquare.transform.position[0] -= Time.deltaTime * speed;
+            mySquare2.transform.position[0] -= Time.deltaTime * speed;
+        } else if (JSGameInput.GetKey("d").Press) {
+            mySquare.transform.position[0] += Time.deltaTime * speed;
+            mySquare2.transform.position[0] += Time.deltaTime * speed;
+        }
+    }
+
+    MyWebGlContext.clear([1, 1, 1, 1]);
+
+    myShaderProgram.use();
+    mySquare.transform.rotation[2] = rotationVector.z;
+    mySquare2.transform.rotation[2] = rotationVector.z;
+
+    touchCircle.transform.scale = [100,100,1,1];
+
+    mySquare2.transform.scale = [testCanvas.width * 0.5, testCanvas.width * 0.5, 1, 0.5];
+    mySquare.transform.scale = [testCanvas.width * 0.4, testCanvas.width * 0.4, 1, 0.5];
+    mySquare2.transform.position[2] = -10
+    mySquare.transform.position[2] = -5
+
+    TestWebGlText.transform.position = [0, 0, -90];
+    TestWebGlText.transform.scale = [testCanvas.width, 300, 1, 0];
+
+    myCircle.transform.Copy(mySquare.transform);
+    myCircle.transform.position[2] = -1;
+    myCircle.transform.scale = [testCanvas.width * 0.4, testCanvas.width * 0.4, 1, 1];
+
+    myCamera.Size = [testCanvas.width, testCanvas.height];
+    myCamera.transform.position = [0, 0, -10];
+
+    myCamera.setToShader(myShaderProgram);
+
+
+    let rQueue = new JSWebGlRenderQueue();
+    rQueue.SetObjects([myCircle, mySquare2, TestWebGlText,mySquare ]);
+    rQueue.Draw(myCamera);
+
+
+    let uiObj = [];
+
+    MyWebGlContext.clearDepth();
+
+    if (testCanvas_TouchInput.touch[0].isPressed) {
+        uiObj.push(touchSquareMid,touchSquare);
+    }
+
+    if (testCanvas_TouchInput.touch[1].isPressed) {
+        uiObj.push(touchCircle)
+    }
+
+    rQueue.SetObjects(uiObj);
+    rQueue.Draw(UICam);
+
+
+
+    window.requestAnimationFrame(() => {
+        loop();
+    })
+}
+
+loop()

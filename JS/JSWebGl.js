@@ -177,6 +177,13 @@ class WebGlContext {
         this._canvasContext.viewport(0, 0, width, height);
     }
 
+    getSize(){
+        return {
+            width: this._canvas.width,
+            height: this._canvas.height
+        };
+    }
+
     setCanFullScreen(bool) {
         this._canFullScreen = bool
     }
@@ -234,7 +241,7 @@ class WebGlContext {
 }
 
 //  Default shader program. Basic 2D graphics
-class JSWebGLShaderProgram {
+class JSWebGLShader {
     constructor(WebGlContext) {
         this._parentContext = WebGlContext._canvasContext;
         this._shaderProgram = this._parentContext.createProgram();
@@ -490,15 +497,13 @@ class JSWebGlCanvasTexture {
 }
 
 // 2D Camera Class
-class JSWebGlCamera {
+class JSWebGlOrthoCamera {
     constructor(WebGlContext) {
         this.transform = new TransForm();
         this.Size = [10, 10];
 
-        this._parentContext = WebGlContext._canvasContext;
+        this._parentContext = WebGlContext;
 
-        this.fov = 45 * Math.PI / 180;
-        this.aspectRatio = this._parentContext.canvas.clientWidth / this._parentContext.canvas.clientHeight;
         this.zNear = 0.1;
         this.zFar = 100.0;
         this._projectionMatrix = mat4.create();
@@ -520,6 +525,7 @@ class JSWebGlCamera {
 
         return returnMatrix;
     }
+
     _getInverseMatrix() {
         this._updateMatrix();
 
@@ -546,23 +552,6 @@ class JSWebGlCamera {
         return returnMatrix;
     }
 
-    screenToWorld(screenPoint) {
-        let returnVector = vec4.create();
-        let iMatrix = this._getInverseMatrix();
-        vec4.transformMat4(
-            returnVector,
-            [
-                screenPoint[0],
-                screenPoint[1],
-                0,
-                0
-            ],
-            this._getInverseMatrix()
-        );
-
-        return returnVector;
-    }
-
     // Update matrices (case base value changed)
     _updateMatrix() {
         let cWidth = Math.round(this.Size[0]);
@@ -587,9 +576,40 @@ class JSWebGlCamera {
     }
 }
 
+class JSWebGlUICamera extends JSWebGlOrthoCamera{
+    constructor(JSWebGlContext) {
+        super(JSWebGlContext);
+
+        this.size = {
+            width: 0,
+            height: 0
+        }
+
+        this.Tick()
+    }
+
+    // Update matrix and size to fit canvas
+    _updateMatrix() {
+        this.Size = [
+            this._parentContext._canvas.width/2,
+            this._parentContext._canvas.height/2
+        ];
+        super._updateMatrix();
+    }
+
+    // Update Size of object to fit canvas
+    Tick(){
+
+        requestAnimationFrame((delta) => {
+            this.Tick();
+        })
+    }
+}
+
 class JSWebGlMesh{
-    constructor(WebGlContext) {
+    constructor(WebGlContext,WebGlShader = null) {
         this._parentContext = WebGlContext._canvasContext;
+        this.Shader = WebGlShader
         this.Texture = new JSWebGlCanvasTexture(WebGlContext);
         this.ExternalTexture = null;
         this.transform = new TransForm();
@@ -661,12 +681,21 @@ class JSWebGlMesh{
         );
     }
 
+    setShader(WebGLShader){
+        this.Shader = WebGLShader;
+    }
+
     setTexture(Texture){
         this.ExternalTexture = Texture;
     }
 
-    draw(WebGlShaderProgram){
-        WebGlShaderProgram.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);
+    draw(JSWebGlCamera){
+        if (!this.Shader){
+            return;
+        }
+        JSWebGlCamera.setToShader(this.Shader);
+
+        this.Shader.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);
 
         // Bind Tex Coord
         this._parentContext.bindBuffer(
@@ -674,40 +703,41 @@ class JSWebGlMesh{
             this._texCoordBuffer
         );
         this._parentContext.vertexAttribPointer(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord,
+            this.Shader._shaderInputLayout.attribLocations.textureCoord,
             2,
             this._parentContext.FLOAT,
             false, 0, 0
         );
         this._parentContext.enableVertexAttribArray(
-            WebGlShaderProgram._shaderInputLayout.attribLocations.textureCoord
+            this.Shader._shaderInputLayout.attribLocations.textureCoord
         );
 
-        WebGlShaderProgram.setWorldMatrix(this.transform.GetTransformMatrix());
+        this.Shader.setWorldMatrix(this.transform.GetTransformMatrix());
 
         if (this.ExternalTexture) {
             this._parentContext.activeTexture(this._parentContext.TEXTURE0);
 
             this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.ExternalTexture.Texture);
 
-            this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
+            this._parentContext.uniform1i(this.Shader._shaderInputLayout.uniformLocations.Texture, 0);
         } else {
             this._parentContext.activeTexture(this._parentContext.TEXTURE0);
 
             this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.Texture.Texture);
 
-            this._parentContext.uniform1i(WebGlShaderProgram._shaderInputLayout.uniformLocations.Texture, 0);
+            this._parentContext.uniform1i(this.Shader._shaderInputLayout.uniformLocations.Texture, 0);
         }
 
-        if (this.RenderMethod == WebGlShaderProgram._parentContext.TRIANGLES) {
+
+        if (this.indexCount > 0){
             this._parentContext.drawElements(
-                this._parentContext.TRIANGLES,
+                this.RenderMethod,
                 this.indexCount,
                 this._parentContext.UNSIGNED_SHORT, 0);
         }
-        else if (this.RenderMethod == WebGlShaderProgram._parentContext.TRIANGLE_FAN) {
+        else{
             this._parentContext.drawArrays(
-                this._parentContext.TRIANGLE_FAN,
+                this.RenderMethod,
                 0,
                 this.polyCount
             );
@@ -716,8 +746,8 @@ class JSWebGlMesh{
 }
 
 class JSWebGlCircle extends JSWebGlMesh {
-    constructor(WebGlContext, colour, sections = 100) {
-        super(WebGlContext);
+    constructor(WebGlContext, JSWebGlShader,colour, sections = 100) {
+        super(WebGlContext,JSWebGlShader);
         this.RenderMethod = this._parentContext.TRIANGLE_FAN;
 
         let vertices = [];
@@ -788,8 +818,8 @@ class JSWebGlSquare extends JSWebGlMesh {
     //Input
     //WebGlContext - Parent context of this object
     //c - The colour of this square
-    constructor(WebGlContext, colour = [1,1,1,1]) {
-        super(WebGlContext);
+    constructor(WebGlContext, WebGlShader,colour = [1,1,1,1]) {
+        super(WebGlContext,WebGlShader);
         this.Colour = colour;
 
         let vertices = [
@@ -818,12 +848,6 @@ class JSWebGlSquare extends JSWebGlMesh {
 
         this.RenderMethod = this._parentContext.TRIANGLES;
     }
-
-    setTexture(Texture) {
-        this.ExternalTexture = Texture;
-    }
-
-    // Draw - Draw with given shader. Shader should be bound to same context
 }
 
 // Render Queue Class
@@ -847,9 +871,7 @@ class JSWebGlRenderQueue{
     }
 
     // Sort Objects and draw them in Z order
-    Draw(WebGlShader,WebGlCamera){
-        WebGlShader.use();
-        WebGlCamera.setToShader(WebGlShader);
+    Draw(WebGlCamera){
         // Find Z Depth
         for (let i = 0; i < this.Objects.length; i++) {
             let zDepth = 0;
@@ -877,11 +899,9 @@ class JSWebGlRenderQueue{
             }
         }
 
-        WebGlShader.use()
-        WebGlCamera.setToShader(WebGlShader);
 
         for (let i = 0; i < this.Objects.length; i++){
-            this.Objects[i][0].draw(WebGlShader);
+            this.Objects[i][0].draw(WebGlCamera);
         }
 
     }
