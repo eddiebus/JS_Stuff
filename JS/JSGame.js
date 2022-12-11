@@ -515,7 +515,6 @@ function loop() {
     mySquare.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.rotation[2] = rotationVector.z;
 
-    touchCircle.transform.scale = [100,100,1,1];
 
     mySquare2.transform.scale = [testCanvas.width * 0.5, testCanvas.width * 0.5, 1, 0.5];
     mySquare.transform.scale = [testCanvas.width * 0.4, testCanvas.width * 0.4, 1, 0.5];
