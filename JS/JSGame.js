@@ -489,7 +489,7 @@ function loop() {
 
             let touchObj = testCanvas_TouchInput.touch[1];
             touchCircle.transform.position = [0,0,0];
-            touchCircle.transform.scale = [joystickSize/2,joystickSize/2,0];
+            touchCircle.transform.scale = [joystickSize/2,joystickSize/2,1];
         }
 
         if (JSGameInput.GetKey("w").Press) {
