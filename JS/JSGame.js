@@ -417,7 +417,7 @@ myCircle.setTexture(myTexture);
 
 let touchSquare = new JSWebGlSquare(MyWebGlContext, myShaderProgram,[0, 0, 0, 0.5]);
 let touchSquareMid = new JSWebGlSquare(MyWebGlContext,myShaderProgram, [0, 1, 0, 0.2]);
-let touchCircle = new JSWebGlCircle(MyWebGlContext, myShaderProgram,[1, 0, 0, 1]);
+let touchCircle = new JSWebGlCircle(MyWebGlContext, myShaderProgram,[0, 1, 0, 1]);
 
 
 let rotationVector = new WebGlVector3(0, 0, 0);
@@ -484,12 +484,13 @@ function loop() {
             touchSquareMid.transform.position[2] = -10;
         }
 
+
         if (testCanvas_TouchInput.touch[1].isPressed) {
             rotationVector.z += Time.deltaTime;
 
             let touchObj = testCanvas_TouchInput.touch[1];
-            touchCircle.transform.position = [0,0,0];
-            touchCircle.transform.scale = [joystickSize/2,joystickSize/2,1];
+            touchCircle.transform.position = [0,0,-10];
+            touchCircle.transform.scale = [joystickSize/2,joystickSize/2,100];
         }
 
         if (JSGameInput.GetKey("w").Press) {
@@ -546,6 +547,8 @@ function loop() {
     if (testCanvas_TouchInput.touch[0].isPressed) {
         uiObj.push(touchSquareMid,touchSquare);
     }
+
+
 
     if (testCanvas_TouchInput.touch[1].isPressed) {
         uiObj.push(touchCircle)
