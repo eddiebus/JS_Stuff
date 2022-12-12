@@ -23,11 +23,28 @@ function GetVectorMagnitude(inputVector) {
 
 class TransForm {
     constructor() {
+        //Parent Transform
+        //Is of same class
+
+        this.parentTransform = null;
         this.position = vec4.create();
         this.rotation = vec4.create();
         this.scale = vec4.create()
         for (let i = 0; i < 4; i++) {
             this.scale[i] = 1;
+        }
+    }
+
+    SetParent(otherTransform){
+        if (otherTransform != null) {
+            if (otherTransform.constructor.name != this.constructor.name || otherTransform == null) {
+                return;
+            } else {
+                this.parentTransform = otherTransform; //Set parent as reference to other transform
+            }
+        }
+        else{
+            this.parentTransform = null;
         }
     }
 
@@ -109,6 +126,16 @@ class TransForm {
             returnMatrix,
             rotationMatrix
         );
+
+        if (this.parentTransform) {
+            let parentTransformMatrix = this.parentTransform.GetTransformMatrix();
+            mat4.multiply(
+                returnMatrix,
+                parentTransformMatrix,
+                returnMatrix
+            );
+        }
+
         return returnMatrix;
     }
 }
@@ -566,7 +593,11 @@ class JSWebGlOrthoCamera {
             this.zNear,
             this.zFar
         );
-        this._viewMatrix = this.transform.GetTransformMatrix();
+
+        let CamTransform = new TransForm();
+        CamTransform.Copy(this.transform);
+        CamTransform.position = [-CamTransform.position[0],-CamTransform.position[1],-CamTransform.position[2]]
+        this._viewMatrix = CamTransform.GetTransformMatrix();
     }
 
     setToShader(WebGlShaderProgram) {
@@ -608,75 +639,76 @@ class JSWebGlUICamera extends JSWebGlOrthoCamera{
 
 class JSWebGlMesh{
     constructor(WebGlContext,WebGlShader = null) {
-        this._parentContext = WebGlContext._canvasContext;
+        this._parentContext = WebGlContext;
+        this._parentWebGlContext = WebGlContext._canvasContext;
         this.Shader = WebGlShader
         this.Texture = new JSWebGlCanvasTexture(WebGlContext);
         this.ExternalTexture = null;
         this.transform = new TransForm();
 
-        this._vertexBuffer = this._parentContext.createBuffer();
-        this._indexBuffer = this._parentContext.createBuffer();
-        this._texCoordBuffer = this._parentContext.createBuffer();
+        this._vertexBuffer = this._parentContext._canvasContext.createBuffer();
+        this._indexBuffer = this._parentContext._canvasContext.createBuffer();
+        this._texCoordBuffer = this._parentContext._canvasContext.createBuffer();
 
         this.polyCount = 0;
         this.indexCount = 0;
-        this.RenderMethod = this._parentContext.TRIANGLES;
+        this.RenderMethod = this._parentContext._canvasContext.TRIANGLES;
     }
 
     // Set vertex buffer for this mesh
     _setVertexBuffer(vertexArray){
 
         // write points to buffer
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
+        this._parentContext._canvasContext.bindBuffer(
+            this._parentContext._canvasContext.ARRAY_BUFFER,
             this._vertexBuffer
         );
 
-        this._parentContext.bufferData(
-            this._parentContext.ARRAY_BUFFER,
+        this._parentContext._canvasContext.bufferData(
+            this._parentContext._canvasContext.ARRAY_BUFFER,
             new Float32Array(vertexArray),
-            this._parentContext.STATIC_DRAW
+            this._parentContext._canvasContext.STATIC_DRAW
         );
 
-        this._parentContext.bindBuffer(this._parentContext.ARRAY_BUFFER, null);
+        this._parentContext._canvasContext.bindBuffer(this._parentContext._canvasContext.ARRAY_BUFFER, null);
 
         this.polyCount = vertexArray.length/3;
     }
 
     _setTextureCoords(textCoordArray){
         // write texCoords
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
+        this._parentContext._canvasContext.bindBuffer(
+            this._parentContext._canvasContext.ARRAY_BUFFER,
             this._texCoordBuffer
         );
 
-        this._parentContext.bufferData(
-            this._parentContext.ARRAY_BUFFER,
+        this._parentContext._canvasContext.bufferData(
+            this._parentContext._canvasContext.ARRAY_BUFFER,
             new Float32Array(textCoordArray),
-            this._parentContext.STATIC_DRAW
+            this._parentContext._canvasContext.STATIC_DRAW
         );
 
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
+        this._parentContext._canvasContext.bindBuffer(
+            this._parentContext._canvasContext.ARRAY_BUFFER,
             null
         );
     }
 
     _setIndexBuffer(indexArray){
         //write indicies to buffer
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
+        this._parentContext._canvasContext.bindBuffer(
+            this._parentContext._canvasContext.ELEMENT_ARRAY_BUFFER,
             this._indexBuffer
         );
 
-        this._parentContext.bufferData(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
+        this._parentContext._canvasContext.bufferData(
+            this._parentContext._canvasContext.ELEMENT_ARRAY_BUFFER,
             new Uint16Array(indexArray),
-            this._parentContext.STATIC_DRAW
+            this._parentContext._canvasContext.STATIC_DRAW
         );
 
-        this._parentContext.bindBuffer(
-            this._parentContext.ELEMENT_ARRAY_BUFFER,
+        this._parentContext._canvasContext.bindBuffer(
+            this._parentContext._canvasContext.ELEMENT_ARRAY_BUFFER,
             null
         );
     }
@@ -690,6 +722,9 @@ class JSWebGlMesh{
     }
 
     draw(JSWebGlCamera){
+        if (JSWebGlCamera._parentContext != this._parentContext){
+            console.warn("Can't Draw : Drawing to different Object.");
+        }
         if (!this.Shader){
             return;
         }
@@ -698,45 +733,45 @@ class JSWebGlMesh{
         this.Shader.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);
 
         // Bind Tex Coord
-        this._parentContext.bindBuffer(
-            this._parentContext.ARRAY_BUFFER,
+        this._parentContext._canvasContext.bindBuffer(
+            this._parentContext._canvasContext.ARRAY_BUFFER,
             this._texCoordBuffer
         );
-        this._parentContext.vertexAttribPointer(
+        this._parentContext._canvasContext.vertexAttribPointer(
             this.Shader._shaderInputLayout.attribLocations.textureCoord,
             2,
-            this._parentContext.FLOAT,
+            this._parentContext._canvasContext.FLOAT,
             false, 0, 0
         );
-        this._parentContext.enableVertexAttribArray(
+        this._parentContext._canvasContext.enableVertexAttribArray(
             this.Shader._shaderInputLayout.attribLocations.textureCoord
         );
 
         this.Shader.setWorldMatrix(this.transform.GetTransformMatrix());
 
         if (this.ExternalTexture) {
-            this._parentContext.activeTexture(this._parentContext.TEXTURE0);
+            this._parentContext._canvasContext.activeTexture(this._parentContext._canvasContext.TEXTURE0);
 
-            this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.ExternalTexture.Texture);
+            this._parentContext._canvasContext.bindTexture(this._parentContext._canvasContext.TEXTURE_2D, this.ExternalTexture.Texture);
 
-            this._parentContext.uniform1i(this.Shader._shaderInputLayout.uniformLocations.Texture, 0);
+            this._parentContext._canvasContext.uniform1i(this.Shader._shaderInputLayout.uniformLocations.Texture, 0);
         } else {
-            this._parentContext.activeTexture(this._parentContext.TEXTURE0);
+            this._parentContext._canvasContext.activeTexture(this._parentContext._canvasContext.TEXTURE0);
 
-            this._parentContext.bindTexture(this._parentContext.TEXTURE_2D, this.Texture.Texture);
+            this._parentContext._canvasContext.bindTexture(this._parentContext._canvasContext.TEXTURE_2D, this.Texture.Texture);
 
-            this._parentContext.uniform1i(this.Shader._shaderInputLayout.uniformLocations.Texture, 0);
+            this._parentContext._canvasContext.uniform1i(this.Shader._shaderInputLayout.uniformLocations.Texture, 0);
         }
 
 
         if (this.indexCount > 0){
-            this._parentContext.drawElements(
+            this._parentContext._canvasContext.drawElements(
                 this.RenderMethod,
                 this.indexCount,
-                this._parentContext.UNSIGNED_SHORT, 0);
+                this._parentContext._canvasContext.UNSIGNED_SHORT, 0);
         }
         else{
-            this._parentContext.drawArrays(
+            this._parentContext._canvasContext.drawArrays(
                 this.RenderMethod,
                 0,
                 this.polyCount
@@ -745,14 +780,35 @@ class JSWebGlMesh{
     }
 }
 
-class JSWebGlCircle extends JSWebGlMesh {
-    constructor(WebGlContext, JSWebGlShader,colour, sections = 100) {
-        super(WebGlContext,JSWebGlShader);
-        this.RenderMethod = this._parentContext.TRIANGLE_FAN;
+class JSWebGlTriangle extends  JSWebGlMesh{
+    constructor(WebGlContext, JSWebGlShader, colour) {
+        super(WebGlContext, JSWebGlShader)
 
         let vertices = [];
         let textureCoord = [];
-        let vColours = [];
+
+        vertices.push(-1,-1,0);
+        vertices.push(0,1,0);
+        vertices.push(1,-1,0);
+
+        textureCoord.push(0,1);
+        textureCoord.push(0.5,0);
+        textureCoord.push(1,1);
+
+        this._setVertexBuffer(vertices);
+        this._setTextureCoords(textureCoord);
+
+        this.Texture.clear(colour[0], colour[1],colour[2],colour[3])
+    }
+}
+
+class JSWebGlCircle extends JSWebGlMesh {
+    constructor(WebGlContext, JSWebGlShader,colour, sections = 100) {
+        super(WebGlContext,JSWebGlShader);
+        this.RenderMethod = this._parentContext._canvasContext.TRIANGLE_FAN;
+
+        let vertices = [];
+        let textureCoord = [];
         let indices = [];
 
         this.sections = sections; //How many sections of the circle
@@ -767,10 +823,6 @@ class JSWebGlCircle extends JSWebGlMesh {
         textureCoord.push(0.5);
         textureCoord.push(0.5);
 
-        vColours.push(colour[0]);
-        vColours.push(colour[1]);
-        vColours.push(colour[2]);
-        vColours.push(colour[3]);
 
         // Add points around center
         // Add indecies
@@ -790,10 +842,6 @@ class JSWebGlCircle extends JSWebGlMesh {
             textureCoord.push(texX);
             textureCoord.push(texY);
 
-            vColours.push(colour[0]);
-            vColours.push(colour[1]);
-            vColours.push(colour[2]);
-            vColours.push(colour[3]);
 
         }
 
@@ -807,7 +855,7 @@ class JSWebGlCircle extends JSWebGlMesh {
 
         this._setTextureCoords(textureCoord);
 
-        this.Texture.clear([1, 1, 0, 1]);
+        this.Texture.clear([1, 1, 1, 1]);
     }
     setTexture(Texture) {
         this.ExternalTexture = Texture;
@@ -846,7 +894,7 @@ class JSWebGlSquare extends JSWebGlMesh {
         this._setTextureCoords(textureCoord);
         this.Texture.clear(this.Colour);
 
-        this.RenderMethod = this._parentContext.TRIANGLES;
+        this.RenderMethod = this._parentContext._canvasContext.TRIANGLES;
     }
 }
 
@@ -891,7 +939,7 @@ class JSWebGlRenderQueue{
         for (let i = 0; i < this.Objects.length - 1; i++){
             let thisDepth = this.Objects[i][1];
             let thatDepth = this.Objects[i + 1][1];
-            if (thisDepth > thatDepth){
+            if (thisDepth < thatDepth){
                 let tempObj = this.Objects[i];
                 this.Objects[i] = this.Objects[i+1];
                 this.Objects[i + 1] = tempObj;
