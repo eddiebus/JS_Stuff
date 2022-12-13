@@ -556,7 +556,7 @@ let myCamera = new JSWebGlOrthoCamera(MyWebGlContext);
 
 class PlayerPlane_Mesh extends JSWebGlTriangle{
     constructor() {
-        super(MyWebGlContext,myShaderProgram,[1,1,1,1]);
+        super(MyWebGlContext,myShaderProgram,[0,0,0,1]);
     }
 }
 
