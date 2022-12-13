@@ -277,7 +277,7 @@ class JSGameMouseInput {
 }
 
 // Keyboard Key Object
-class JSGame_Key {
+class JSGameKey {
     constructor(KeyString, KeyDown, KeyPress) {
         this.value = KeyString;
         this.Down = KeyDown;
@@ -325,11 +325,10 @@ class JSGame_Key {
         }
     }
 }
-
 // Keyboard Input Handler
-class JSGame_InputSystem {
+class JSGameKeyInput {
     constructor() {
-        this._Keys = []
+        this.Keys = []
 
         window.addEventListener("keydown", (event) => {
             if (!event.repeat) {
@@ -344,24 +343,24 @@ class JSGame_InputSystem {
     GetKey(keyName) {
         let index = this._GetKeyIndex(keyName);
         if (index != null) {
-            return this._Keys[index];
+            return this.Keys[index];
         } else {
-            return new JSGame_Key(null, false, false);
+            return new JSGameKey(null, false, false);
         }
 
     }
 
     DebugLogKeys() {
         console.log("Keys: ");
-        for (let i = 0; i < this._Keys.length; i++) {
-            console.log(this._Keys[i].value);
+        for (let i = 0; i < this.Keys.length; i++) {
+            console.log(this.Keys[i].value);
         }
     }
 
     _GetKeyIndex(keyString) {
         let returnIndex = -1;
-        for (let i = 0; i < this._Keys.length; i++) {
-            if (this._Keys[i].value == keyString) {
+        for (let i = 0; i < this.Keys.length; i++) {
+            if (this.Keys[i].value == keyString) {
                 returnIndex = i;
             }
         }
@@ -376,13 +375,13 @@ class JSGame_InputSystem {
 
     _AddKeyDownEvent(keyEvent) {
         if (!this._GetKeyIndex(keyEvent.key)) {
-            this._Keys.push(new JSGame_Key(keyEvent.key, true, true));
+            this.Keys.push(new JSGameKey(keyEvent.key, true, true));
         }
     }
 
     _Tick(deltaTime) {
-        for (let i = 0; i < this._Keys.length; i++) {
-            this._Keys[i].Tick();
+        for (let i = 0; i < this.Keys.length; i++) {
+            this.Keys[i].Tick();
         }
 
         window.requestAnimationFrame(() => {
@@ -439,11 +438,13 @@ class JSGameObject {
 
         if (otherObject != null) {
             if (otherObject.ParentObject == this) {
-                throw "GameObject Error: Current Object is already parent to Object."
+                throw "GameObject Error: This Object is already parent to other GameObject"
                 return;
             }
         }
 
+        // Check if we already have a parent
+        // If so, go remove self from it
         if (this.ParentObject) {
             let matchIndex = -1
             for (let i = 0; i < this.ParentObject.ChildObject.length; i++) {
@@ -455,7 +456,6 @@ class JSGameObject {
             if (matchIndex >= 0) {
                 this.ParentObject.ChildObject.splice(matchIndex, 1);
             }
-            console.log("Removed Self From Class");
         }
 
         //Check if already exist
@@ -469,11 +469,11 @@ class JSGameObject {
 
                 }
 
+                // We are not already set, add self as child object
                 if (!alreadyExist) {
                     otherObject.ChildObject.push(this);
                     this.ParentObject = otherObject;
                     this.transform.parentTransform = otherObject.transform;
-                    console.log("Object set to parent");
                 }
             }
         }
@@ -481,14 +481,11 @@ class JSGameObject {
             this.ParentObject = null;
             this.transform.parentTransform = null;
         }
-
-
     }
 }
 
 
-
-const JSGameInput = new JSGame_InputSystem();
+const JSGameKeyboard = new JSGameKeyInput();
 
 
 
@@ -587,7 +584,7 @@ let PlayerPlane = new MyPlane(MyWebGlContext,myShaderProgram);
 function loop() {
     TestWebGlText.SetText(testString);
 
-    if (JSGameInput.GetKey("e").Press) {
+    if (JSGameKeyboard.GetKey("e").Press) {
         rotationVector.z += Time.deltaTime * 0.3;
     }
 
@@ -641,32 +638,32 @@ function loop() {
             touchCircle.transform.scale = [joystickSize / 2, joystickSize / 2, 100];
         }
 
-        if (JSGameInput.GetKey("w").Press) {
+        if (JSGameKeyboard.GetKey("w").Press) {
             mySquare.transform.position[1] += Time.deltaTime * speed;
             mySquare2.transform.position[1] += Time.deltaTime * speed;
-        } else if (JSGameInput.GetKey("s").Press) {
+        } else if (JSGameKeyboard.GetKey("s").Press) {
             mySquare.transform.position[1] -= Time.deltaTime * speed;
             mySquare2.transform.position[1] -= Time.deltaTime * speed;
         }
 
-        if (JSGameInput.GetKey("a").Press) {
+        if (JSGameKeyboard.GetKey("a").Press) {
             mySquare.transform.position[0] -= Time.deltaTime * speed;
             mySquare2.transform.position[0] -= Time.deltaTime * speed;
-        } else if (JSGameInput.GetKey("d").Press) {
+        } else if (JSGameKeyboard.GetKey("d").Press) {
             mySquare.transform.position[0] += Time.deltaTime * speed;
             mySquare2.transform.position[0] += Time.deltaTime * speed;
         }
     }
 
-    MyWebGlContext.clear([1, 1, 1, 1]);
+    MyWebGlContext.clear([0, 1, 0.7, 1]);
 
     myShaderProgram.use();
     mySquare.transform.rotation[2] = rotationVector.z;
     mySquare2.transform.rotation[2] = rotationVector.z;
 
 
-    mySquare2.transform.scale = [testCanvas.width * 0.5, testCanvas.width * 0.5, 1, 0.5];
-    mySquare.transform.scale = [testCanvas.width * 0.4, testCanvas.width * 0.4, 1, 0.5];
+    mySquare2.transform.scale = [testCanvas.width * 0.3, testCanvas.width * 0.3, 1];
+    mySquare.transform.scale = [testCanvas.width * 0.2, testCanvas.width * 0.2, 1];
     mySquare2.transform.position[2] = -10
     mySquare.transform.position[2] = -5
 
@@ -679,7 +676,7 @@ function loop() {
     myTriangle.transform.position = [0, 2, 1];
 
     myCircle.transform.position[2] = -4;
-    myCircle.transform.scale = [testCanvas.width * 0.4, testCanvas.width * 0.4, 1, 1];
+    myCircle.transform.scale = [testCanvas.width * 0.2, testCanvas.width * 0.2, 1, 1];
 
     myCamera.Size = [testCanvas.width, testCanvas.height];
     myCamera.transform.position = [0, 0, 10];
