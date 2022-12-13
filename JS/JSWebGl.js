@@ -798,7 +798,7 @@ class JSWebGlTriangle extends  JSWebGlMesh{
         this._setVertexBuffer(vertices);
         this._setTextureCoords(textureCoord);
 
-        this.Texture.clear(colour[0], colour[1],colour[2],colour[3])
+        this.Texture.clear(colour);
     }
 }
 
@@ -855,7 +855,7 @@ class JSWebGlCircle extends JSWebGlMesh {
 
         this._setTextureCoords(textureCoord);
 
-        this.Texture.clear([1, 1, 1, 1]);
+        this.Texture.clear(colour);
     }
     setTexture(Texture) {
         this.ExternalTexture = Texture;

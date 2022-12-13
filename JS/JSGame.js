@@ -132,8 +132,6 @@ class JSGameTouch {
                 this.endPos[1] - this.startPos[1]
             ]
 
-            console.log(this.distanceVector);
-
             this.dirVector = GetNormalisedVector(this.distanceVector);
             this._lastPos = this.endPos;
             this.isPressed = true;
@@ -402,6 +400,8 @@ class JSGameObject {
 
     }
 
+    Tick(deltaTime) {}
+
     Draw(JSWebGlCamera) {
     }
 
@@ -484,43 +484,188 @@ class JSGameObject {
     }
 }
 
+class JSGameRenderQueue{
+    constructor() {
+        this.Objects = []
+    }
+
+    SetObjects(ObjectArray){
+        if (ObjectArray.constructor.name != Array().constructor.name){
+            throw "Render Queue Error| Input is not of type: Array";
+        }
+        this.Objects = [];
+        for (let  i = 0; i < ObjectArray.length; i++)
+        {
+            let newItem = [ObjectArray[i],0]
+            if (newItem[0] instanceof JSGameObject) {
+                this.Objects.push(newItem);
+            }
+        }
+    }
+
+    // Sort Objects and draw them in Z order
+    Draw(WebGlCamera){
+        // Find Z Depth
+        for (let i = 0; i < this.Objects.length; i++) {
+            let zDepth = 0;
+            let camTransform = WebGlCamera.GetViewMatrix();
+
+            let resultPos = vec4.create();
+
+            vec4.transformMat4(
+                resultPos,
+                this.Objects[i][0].transform.position,
+                camTransform
+            );
+
+            this.Objects[i][1] = resultPos[2];
+        }
+
+        for (let i = 0; i < this.Objects.length - 1; i++){
+            let thisDepth = this.Objects[i][1];
+            let thatDepth = this.Objects[i + 1][1];
+            if (thisDepth < thatDepth){
+                let tempObj = this.Objects[i];
+                this.Objects[i] = this.Objects[i+1];
+                this.Objects[i + 1] = tempObj;
+                i = -1;
+            }
+        }
+
+
+        for (let i = 0; i < this.Objects.length; i++){
+            this.Objects[i][0].draw(WebGlCamera);
+        }
+
+    }
+}
 
 const JSGameKeyboard = new JSGameKeyInput();
-
-
-
 
 // Testing
 let testCanvas = document.getElementById("Canvas");
 let testCanvas_MouseInput = new JSGameMouseInput(testCanvas);
 testCanvas_MouseInput.locked = false;
 
-let testCanvas_TouchInput = new JSGameTouchInput(testCanvas);
+let TouchInput = new JSGameTouchInput(testCanvas);
+
+let MyWebGlContext = new WebGlContext(testCanvas);
+let myShaderProgram = new JSWebGLShader(MyWebGlContext);
+let myCamera = new JSWebGlOrthoCamera(MyWebGlContext);
+
+
+class PlayerPlane_Mesh extends JSWebGlTriangle{
+    constructor() {
+        super(MyWebGlContext,myShaderProgram,[1,1,1,1]);
+    }
+}
+
+let PlayerPlaneMesh = new PlayerPlane_Mesh();
+
+class UI_MoveJoystick extends JSGameObject{
+    constructor() {
+        super("UI_Joystick");
+        this.OuterCircle = new JSWebGlCircle(MyWebGlContext,myShaderProgram,[1,0,0,0.2]);
+        this.ThumbCirlce = new JSWebGlTriangle(MyWebGlContext,myShaderProgram,[1,1,1,1]);
+
+        this.OuterCircle.transform.SetParent(this.transform);
+        this.ThumbCirlce.transform.SetParent(this.transform);
+        this.ThumbCirlce.transform.scale = [0.3,0.3,1];
+        this.ThumbCirlce.transform.position = [0,0,1];
+
+        this.MoveX = 0;
+        this.MoveY = 0;
+        this.MoveAngle = 0;
+
+        this.JoystickSize = 0;
+        this.Active = false;
+    }
+
+    Tick(){
+        if (!MyWebGlContext.isFullscreen) { return; }
+        this.JoystickSize = (MyWebGlContext.getSize().width / 2) * 0.2;
+        this.transform.scale = [this.JoystickSize,this.JoystickSize,1];
+        this.transform.position = [0,0,-10]
+
+        if (TouchInput.touch[0].isPressed){
+            let touchObj = TouchInput.touch[0];
+            let distanceVector = [...touchObj.distanceVector];
+
+            for (let i = 0; i < distanceVector.length; i++){
+                if (distanceVector[i] > this.JoystickSize){
+                    distanceVector[i] = this.JoystickSize;
+                    console.log(distanceVector[i]);
+                }
+                else if (distanceVector[i] < -this.JoystickSize){
+                    distanceVector[i] = -this.JoystickSize;
+                }
+            }
+
+            this.MoveX = distanceVector[0] / this.JoystickSize;
+            this.MoveY = distanceVector[1] / this.JoystickSize;
+            this.MoveAngle =  (Math.atan2(this.MoveY,this.MoveX) * 180 / Math.PI) - 90;
+
+            this.ThumbCirlce.transform.rotation = [0,0,this.MoveAngle] ;
+
+            this.transform.position = [
+                touchObj.startPos[0],
+                touchObj.startPos[1],
+                -10
+            ]
+
+            this.ThumbCirlce.transform.position = [
+                this.MoveX,
+                this.MoveY,
+                1
+            ];
+
+
+            this.Active = true;
+        }
+        else{
+            this.MoveX = 0;
+            this.MoveY = 0;
+            this.Active = false;
+        }
+    }
+
+    Draw(JSWebGlCamera){
+        if (this.Active) {
+            this.OuterCircle.draw(JSWebGlCamera);
+            this.ThumbCirlce.draw(JSWebGlCamera);
+        }
+    }
+
+}
 
 class MyPlane extends JSGameObject{
-    constructor(JSWebContext, JSWebGlShader) {
+    constructor() {
         super("PlayerPlane");
-        this.DrawTriangle = new JSWebGlTriangle(JSWebContext,JSWebGlShader,[1,0,0,1]);
+        this.DrawTriangle = new JSWebGlTriangle(MyWebGlContext,myShaderProgram,[1,0,0,1]);
         this.DrawTriangle.transform.SetParent(this.transform);
     }
 
     Draw(JSWebCamera){
-        this.DrawTriangle.draw(JSWebCamera);
+        PlayerPlaneMesh.transform.SetParent(this.transform);
+        PlayerPlaneMesh.draw(JSWebCamera);
     }
 
     Tick(DeltaTime) {
-        this.transform.rotation[2] += DeltaTime;
+        if (!MyWebGlContext.isFullscreen) { return; }
+        if (TouchInput.touch[0].isPressed){
+            let touchObj = TouchInput.touch[0];
+            let distanceVector = [...touchObj.distanceVector];
+            this.transform.position[0] += touchObj.distanceVector[0] * DeltaTime/100;
+            this.transform.position[1] += touchObj.distanceVector[1] * DeltaTime/100;
+        }
     }
 }
 
 
-let MyWebGlContext = new WebGlContext(testCanvas);
-
 MyWebGlContext.setCanFullScreen(true);
 MyWebGlContext.resolutionScale = 1;
 
-let myShaderProgram = new JSWebGLShader(MyWebGlContext);
-let myCamera = new JSWebGlOrthoCamera(MyWebGlContext);
+
 myCamera._getInverseMatrix();
 
 let UICam = new JSWebGlUICamera(MyWebGlContext);
@@ -579,7 +724,8 @@ Object1.GetAllChildObjects();
 Object2.GetAllChildObjects();
 
 
-let PlayerPlane = new MyPlane(MyWebGlContext,myShaderProgram);
+let MoveJoystick = new UI_MoveJoystick();
+let PlayerPlane = new MyPlane();
 
 function loop() {
     TestWebGlText.SetText(testString);
@@ -593,9 +739,9 @@ function loop() {
         let touchSpeed = 1;
         let joystickSize = (MyWebGlContext.getSize().width / 2) * 0.3;
 
-        if (testCanvas_TouchInput.touch[0].isPressed) {
-            let touchObj = testCanvas_TouchInput.touch[0];
-            let touchDisVector = testCanvas_TouchInput.touch[0].distanceVector;
+        if (TouchInput.touch[0].isPressed) {
+            let touchObj = TouchInput.touch[0];
+            let touchDisVector = TouchInput.touch[0].distanceVector;
             let moveVector = [touchDisVector[0], touchDisVector[1]];
 
             let moveRange = joystickSize;
@@ -630,10 +776,10 @@ function loop() {
         }
 
 
-        if (testCanvas_TouchInput.touch[1].isPressed) {
+        if (TouchInput.touch[1].isPressed) {
             rotationVector.z += Time.deltaTime;
 
-            let touchObj = testCanvas_TouchInput.touch[1];
+            let touchObj = TouchInput.touch[1];
             touchCircle.transform.position = [touchObj.endPos[0], touchObj.endPos[1], -10];
             touchCircle.transform.scale = [joystickSize / 2, joystickSize / 2, 100];
         }
@@ -685,33 +831,35 @@ function loop() {
 
 
     let rQueue = new JSWebGlRenderQueue();
-    rQueue.SetObjects([mySquare, mySquare2, myTriangle, TestWebGlText, myCircle]);
-    rQueue.Draw(myCamera);
 
 
     let uiObj = [];
 
     MyWebGlContext.clearDepth();
 
-    if (testCanvas_TouchInput.touch[0].isPressed) {
+    if (TouchInput.touch[0].isPressed) {
         uiObj.push(touchSquareMid, touchSquare);
     }
 
-    if (testCanvas_TouchInput.touch[1].isPressed) {
+    if (TouchInput.touch[1].isPressed) {
         uiObj.push(touchCircle)
     }
 
     rQueue.SetObjects(uiObj);
-    rQueue.Draw(UICam);
 
     PlayerPlane.transform.scale = [
-        200,
-        200,
+        150,
+        150,
         1
     ];
 
-    PlayerPlane.Tick(Time.deltaTime/3);
+    TestWebGlText.draw(myCamera);
+
+    MoveJoystick.Tick()
+    PlayerPlane.Tick(Time.deltaTime);
     PlayerPlane.Draw(myCamera);
+    MyWebGlContext.clearDepth();
+    MoveJoystick.Draw(UICam);
 
 
     window.requestAnimationFrame(() => {
