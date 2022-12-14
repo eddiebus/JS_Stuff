@@ -145,7 +145,7 @@ class WebGlContext {
     constructor(HTMLCanvas, antiAlias = true) {
         this._canvasContext = HTMLCanvas.getContext("webgl2", {
             antialias: antiAlias,
-            premultipliedAlpha: false
+            premultipliedAlpha: true
         });
         this._canvas = HTMLCanvas;
 
@@ -287,7 +287,6 @@ uniform mat4 uProjectionMatrix;
 
 void main(void) {
     gl_Position =   uProjectionMatrix * ViewMatrix * WorldMatrix *  vec4(coordinates, 1.0);
-    vColour = colour;
     vTextCoord = texCoord;
 }
         `
@@ -298,9 +297,12 @@ varying   vec2 vTextCoord;
 
 uniform int toTexture;
 uniform sampler2D vTexture;
+uniform vec4 ColourBalance;
 
 void main() {
         vec4 cSample = texture2D(vTexture,vTextCoord);
+        cSample *= vec4 (ColourBalance.r,ColourBalance.g,ColourBalance.b,1);
+        cSample *= ColourBalance.a;
         gl_FragColor = cSample;
 }
 `
@@ -328,6 +330,7 @@ void main() {
                 projectionMatrix: this._parentContext.getUniformLocation(this._shaderProgram, 'uProjectionMatrix'),
                 viewMatrix: this._parentContext.getUniformLocation(this._shaderProgram, 'ViewMatrix'),
                 worldMatrix: this._parentContext.getUniformLocation(this._shaderProgram, 'WorldMatrix'),
+                ColourBalance: this._parentContext.getUniformLocation(this._shaderProgram, 'ColourBalance'),
                 toTexture: this._parentContext.getUniformLocation(this._shaderProgram, 'toTexture'),
                 Texture: this._parentContext.getUniformLocation(this._shaderProgram, 'vTexture')
             }
@@ -360,6 +363,13 @@ void main() {
             this._shaderInputLayout.uniformLocations.projectionMatrix,
             false,
             newMatrix
+        );
+    }
+
+    SetColour(colour = [1,1,1,1]){
+        this._parentContext.uniform4fv(
+            this._shaderInputLayout.uniformLocations.ColourBalance,
+            colour
         );
     }
 
@@ -643,6 +653,7 @@ class JSWebGlMesh{
         this._parentWebGlContext = WebGlContext._canvasContext;
         this.Shader = WebGlShader
         this.Texture = new JSWebGlCanvasTexture(WebGlContext);
+        this.Colour = [1,1,1,1];
         this.ExternalTexture = null;
         this.transform = new TransForm();
 
@@ -721,6 +732,10 @@ class JSWebGlMesh{
         this.ExternalTexture = Texture;
     }
 
+    setColour(Colour = [1,1,1,1]){
+        this.Colour = Colour;
+    }
+
     draw(JSWebGlCamera){
         if (JSWebGlCamera._parentContext != this._parentContext){
             console.warn("Can't Draw : Drawing to different Object.");
@@ -732,6 +747,7 @@ class JSWebGlMesh{
         JSWebGlCamera.setToShader(this.Shader);
 
         this.Shader.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);
+        this.Shader.SetColour(this.Colour);
 
         // Bind Tex Coord
         this._parentContext._canvasContext.bindBuffer(
@@ -807,6 +823,7 @@ class JSWebGlCircle extends JSWebGlMesh {
     constructor(WebGlContext, JSWebGlShader,colour, sections = 100) {
         super(WebGlContext,JSWebGlShader);
         this.RenderMethod = this._parentContext._canvasContext.TRIANGLE_FAN;
+        this.Colour = colour;
 
         let vertices = [];
         let textureCoord = [];
@@ -856,7 +873,7 @@ class JSWebGlCircle extends JSWebGlMesh {
 
         this._setTextureCoords(textureCoord);
 
-        this.Texture.clear(colour);
+        this.Texture.clear([1,1,1,1]);
     }
     setTexture(Texture) {
         this.ExternalTexture = Texture;
