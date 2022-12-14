@@ -728,6 +728,7 @@ class JSWebGlMesh{
         if (!this.Shader){
             return;
         }
+        this.Shader.use();
         JSWebGlCamera.setToShader(this.Shader);
 
         this.Shader.setVertexIndexBuffer(this._vertexBuffer, this._indexBuffer);

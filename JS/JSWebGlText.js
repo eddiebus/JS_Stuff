@@ -1,6 +1,6 @@
 class WebGlText extends JSWebGlSquare {
     constructor(WebGlContext,WebGlShader) {
-        super(WebGlContext, myShaderProgram,[1, 1, 1, 1]);
+        super(WebGlContext, MainShaderContext,[1, 1, 1, 1]);
         this._targetCanvas = document.createElement("canvas");
 
 
