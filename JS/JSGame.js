@@ -735,8 +735,8 @@ class MyPlane extends JSGameObject{
             if (JoyStick.length > 0) { JoyStick = JoyStick[0]};
 
 
-            this.transform.position[0] += JoyStick.MoveX * DeltaTime * this.MoveSpeed;
-            this.transform.position[1] += JoyStick.MoveY * DeltaTime * this.MoveSpeed;
+            this.transform.position[0] += JoyStick.MoveX * DeltaTime/2 * this.MoveSpeed;
+            this.transform.position[1] += JoyStick.MoveY * DeltaTime/2 * this.MoveSpeed;
         }
         this.transform.position[2] = 5;
         this.transform.scale = [100,100,1];
