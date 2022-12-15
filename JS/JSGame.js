@@ -390,6 +390,13 @@ class JSGameKeyInput {
     }
 }
 
+class JSGameCollisionComp {
+    constructor() {
+        this.Name = "Null";
+    }
+    Tick(DeltaTime){}
+}
+
 class JSGameObject {
     #Root = false;
 
@@ -442,20 +449,6 @@ class JSGameObject {
             RootObject = RootObject.ParentObject
         }
         return RootObject;
-    }
-
-
-    FindObjectsOfName(ObjectName) {
-        let ResultArray = [];
-        let RootObject = this.GetRootObject();
-        let AllObjects = RootObject.GetAllChildObjects();
-        for (let object in AllObjects) {
-            if (object.name == ObjectName) {
-                ResultArray.push(object);
-            }
-        }
-
-        return ResultArray;
     }
 
     FindObjectsOfType(ObjectType) {
@@ -533,6 +526,14 @@ class JSGameObject {
             this.ParentObject = null;
             this.transform.parentTransform = null;
         }
+    }
+}
+
+class JSGameCollider{
+    constructor(ParentObject,Type,Dynamic = false) {
+       this.ParentObj = ParentObject;
+       this.Type = Type;
+       this.Dynamic = Dynamic;
     }
 }
 
