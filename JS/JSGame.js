@@ -390,15 +390,99 @@ class JSGameKeyInput {
     }
 }
 
-class JSGameCollisionComp {
-    constructor() {
-        this.Name = "Null";
+
+const JSGameColliderType = {
+    Box: "Box",
+    Circle: "Cirlce",
+    Triangle: "Tri"
+}
+
+class JSGameCollider {
+    constructor(ParentTransform, MatterJSBody, IsStatic = true) {
+        this.TransformTarget = ParentTransform;
+        this.Static = IsStatic;
+        this.Body = null;
+        this.Body = MatterJSBody;
+        if (this.Body) {
+            Matter.Body.setPosition(this.Body, {x: 0, y: 0});
+        }
     }
-    Tick(DeltaTime){}
+
+    Check(OtherCollider) {
+        if (!OtherCollider instanceof JSGameCollider) {
+            return;
+        }
+        this.#SetBodyToWorldSize();
+        OtherCollider.#SetBodyToWorldSize();
+
+        let CollisionEvent = Matter.Query.collides(this.Body, [OtherCollider.Body]);
+
+        this.#ResetBodyFromWorldSize();
+        OtherCollider.#ResetBodyFromWorldSize();
+
+        if (CollisionEvent.length > 0) {
+            return CollisionEvent[0];
+        } else {
+            return null;
+        }
+
+    }
+
+    //Set Body to World size based on transform
+    //Used by Check function
+    #SetBodyToWorldSize(){
+        let sizeScale = 2;
+        let sizeX = this.TransformTarget.scale[0] * sizeScale;
+        let sizeY = this.TransformTarget.scale[0] * sizeScale;
+        Matter.Body.scale(this.Body,
+            sizeX,
+            sizeY
+            );
+
+        Matter.Body.setPosition(
+            this.Body,
+            {
+                x: this.TransformTarget.position[0],
+                y: this.TransformTarget.position[1]
+            }
+        )
+
+        Matter.Body.setAngle(this.Body,
+            DegToRadians(this.TransformTarget.rotation[2])
+        );
+    }
+
+    //Reset Body after it is set to world size
+    //Since Body Scale Function does not reset.
+    #ResetBodyFromWorldSize(){
+        let sizeScale = 2;
+        let sizeX = this.TransformTarget.scale[0] * sizeScale;
+        let sizeY = this.TransformTarget.scale[0] * sizeScale;
+        Matter.Body.scale(this.Body,
+            1/sizeX,
+            1/sizeY
+        );
+
+        Matter.Body.setPosition(
+            this.Body,
+            {
+                x: 0,
+                y: 0
+            }
+        )
+
+        Matter.Body.setAngle(this.Body,
+            0);
+    }
+
+    Tick(DeltaTime) {
+    }
 }
 
 class JSGameObject {
     #Root = false;
+    #EnterHitObj = []
+    #ExitHitObj = []
 
     constructor(name = "NullObject", options = {
         LayerName: "DefaultLayer",
@@ -419,6 +503,7 @@ class JSGameObject {
 
         this.ParentObject = null;
         this.ChildObject = []; //Child Objects of this Object
+        this.Collider = null;
     }
 
     #DeleteSelfFromParent() {
@@ -437,7 +522,29 @@ class JSGameObject {
         }
     }
 
-    Tick(deltaTime) {
+    Update() {
+        if (this.Collider) {
+            this.Collider.Tick();
+        }
+    }
+
+    Tick(DeltaTime) {
+    }
+
+    CollisionCheck(otherObject) {
+        if (!otherObject instanceof JSGameObject) {
+            return;
+        }
+        if (!this.Collider || !otherObject.Collider) {
+            return;
+        }
+
+        let ColEvent = this.Collider.Check(otherObject.Collider);
+        if (ColEvent != null) {
+            console.log(`Hit! ${ColEvent.collided}`);
+
+        }
+
     }
 
     Draw(JSWebGlCamera) {
@@ -529,13 +636,6 @@ class JSGameObject {
     }
 }
 
-class JSGameCollider{
-    constructor(ParentObject,Type,Dynamic = false) {
-       this.ParentObj = ParentObject;
-       this.Type = Type;
-       this.Dynamic = Dynamic;
-    }
-}
 
 class JSGameScene extends JSGameObject {
     constructor() {
@@ -546,17 +646,30 @@ class JSGameScene extends JSGameObject {
     }
 
     Tick() {
-        MainWebGlContext.clear();
         let Objects = this.GetAllChildObjects();
         for (let i = 0; i < Objects.length; i++) {
             Objects[i].Tick(Time.deltaTime);
         }
+
+        this.#CollisionCheckObjs();
     }
 
     Draw(JSWebGlCamera) {
-        let Objects = this.GetAllChildObjects()
+        MainWebGlContext.clear();
+        let Objects = this.GetAllChildObjects();
         for (let i = 0; i < Objects.length; i++) {
             Objects[i].Draw(JSWebGlCamera);
+        }
+    }
+
+    #CollisionCheckObjs() {
+        let Objects = this.GetAllChildObjects();
+        for (let i = 0; i < Objects.length; i++) {
+            for (let obj = 0; obj < Objects.length; obj++) {
+                if (obj != i) {
+                    Objects[i].CollisionCheck(Objects[obj]);
+                }
+            }
         }
     }
 
@@ -607,15 +720,14 @@ class JSGameScene extends JSGameObject {
             let camTransform = JSWebGlCamera.GetViewMatrix();
             vec4.transformMat4(
                 thisPos,
-                [...RArray[i].transform.position,0],
+                [...RArray[i].transform.position, 0],
                 camTransform
             );
 
 
-            console.log([...RArray[i + 1].transform.position,0]);
             vec4.transformMat4(
                 thatPos,
-                [...RArray[i + 1].transform.position,0],
+                [...RArray[i + 1].transform.position, 0],
                 camTransform
             );
 
@@ -623,7 +735,6 @@ class JSGameScene extends JSGameObject {
                 let tempObj = RArray[i];
                 RArray[i] = RArray[i + 1];
                 RArray[i + 1] = tempObj;
-                console.log("!!!!");
                 i = 0;
             }
         }
@@ -724,19 +835,43 @@ class UI_MoveJoystick extends JSGameObject {
     }
 
     Draw(JSWebGlCamera) {
-        if (!this.Active) { return; }
+        if (!this.Active) {
+            return;
+        }
         this.OuterCircle.draw(JSWebGlCamera);
         this.ThumbCirlce.draw(JSWebGlCamera);
 
     }
 }
 
+class SpinBox extends JSGameObject {
+    constructor() {
+        super("SpinBox");
+        this.Collider = new JSGameCollider(this.transform, Matter.Bodies.circle(0, 0, 0.5));
+
+        this.Mesh = new JSWebGlCircle(MainWebGlContext, MainShaderContext, [1, 1, 1, 1]);
+        this.Mesh.transform.SetParent(this.transform);
+    }
+
+    Tick(DeltaTime) {
+        super.Update();
+        this.transform.position = [0, 0, -10];
+        this.transform.scale = [100, 100, 1];
+        this.transform.rotation[2] += DeltaTime/200;
+    }
+
+    Draw(JSWebGlCamera) {
+        this.Mesh.draw(JSWebGlCamera);
+    }
+
+}
+
 class MyPlane extends JSGameObject {
     constructor() {
         super("PlayerPlane");
         this.MoveSpeed = 1;
-        this.DrawTriangle = new JSWebGlTriangle(MainWebGlContext, MainShaderContext, [1, 0, 0, 1]);
-        this.DrawTriangle.transform.SetParent(this.transform);
+        this.Collider = new JSGameCollider(this.transform,
+            Matter.Bodies.rectangle(0, 0, 1, 1));
     }
 
     Draw(JSWebCamera) {
@@ -748,6 +883,8 @@ class MyPlane extends JSGameObject {
     }
 
     Tick(DeltaTime) {
+        super.Update(); //Update Object properties
+
         if (TouchInput.touch[0].isPressed) {
             let touchObj = TouchInput.touch[0];
             let distanceVector = [...touchObj.distanceVector];
@@ -776,6 +913,7 @@ class TestScene extends JSGameScene {
         this.Camera = new JSWebGlUICamera(MainWebGlContext);
         new MyPlane().SetParent(this);
         new UI_MoveJoystick().SetParent(this);
+        new SpinBox().SetParent(this);
     }
 
     Tick() {
