@@ -479,6 +479,38 @@ class JSGameCollider {
     }
 }
 
+class JSGameBoxCollider extends JSGameCollider{
+    constructor(ParentTransform,SizeVector = [1,1],IsStatic = true) {
+        super(ParentTransform,Matter.Bodies.rectangle(0,0,SizeVector[0],SizeVector[1]),IsStatic);
+    }
+}
+
+class JSGameCircleCollider extends JSGameCollider{
+    constructor(
+        ParentTransform,Radius = 0.5,IsStatic = true
+    ) {
+        super(ParentTransform,Matter.Bodies.circle(
+            0,0,
+            Radius
+        ),IsStatic);
+    }
+}
+
+class JSGameTriCollider extends JSGameCollider{
+    constructor(ParentTransform,Size = 1, IsStatic = true) {
+        let baseSize = 0.5;
+        let points = [
+            {x: 0, y: 0.1 * Size},
+            {x: baseSize * Size, y: -0.5  * Size},
+            {x: -baseSize * Size, y: -0.5 * Size}
+        ]
+
+        let MatterBody = Matter.Bodies.polygon(0,0,3,0.5);
+        console.log(MatterBody.bounds);
+        super(ParentTransform,MatterBody,IsStatic);
+    }
+}
+
 class JSGameObject {
     #Root = false;
     #EnterHitObj = []
@@ -847,9 +879,9 @@ class UI_MoveJoystick extends JSGameObject {
 class SpinBox extends JSGameObject {
     constructor() {
         super("SpinBox");
-        this.Collider = new JSGameCollider(this.transform, Matter.Bodies.circle(0, 0, 0.5));
+        this.Collider = new JSGameBoxCollider(this.transform);
 
-        this.Mesh = new JSWebGlCircle(MainWebGlContext, MainShaderContext, [1, 1, 1, 1]);
+        this.Mesh = new JSWebGlSquare(MainWebGlContext, MainShaderContext, [1, 1, 1, 1]);
         this.Mesh.transform.SetParent(this.transform);
     }
 
@@ -857,7 +889,7 @@ class SpinBox extends JSGameObject {
         super.Update();
         this.transform.position = [0, 0, -10];
         this.transform.scale = [100, 100, 1];
-        this.transform.rotation[2] += DeltaTime/200;
+        this.transform.rotation[2] = DeltaTime/200;
     }
 
     Draw(JSWebGlCamera) {
@@ -870,8 +902,7 @@ class MyPlane extends JSGameObject {
     constructor() {
         super("PlayerPlane");
         this.MoveSpeed = 1;
-        this.Collider = new JSGameCollider(this.transform,
-            Matter.Bodies.rectangle(0, 0, 1, 1));
+        this.Collider = new JSGameTriCollider(this.transform);
     }
 
     Draw(JSWebCamera) {
