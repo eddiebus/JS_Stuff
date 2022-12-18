@@ -496,20 +496,6 @@ class JSGameCircleCollider extends JSGameCollider{
     }
 }
 
-class JSGameTriCollider extends JSGameCollider{
-    constructor(ParentTransform,Size = 1, IsStatic = true) {
-        let baseSize = 0.5;
-        let points = [
-            {x: 0, y: 0.1 * Size},
-            {x: baseSize * Size, y: -0.5  * Size},
-            {x: -baseSize * Size, y: -0.5 * Size}
-        ]
-
-        let MatterBody = Matter.Bodies.polygon(0,0,3,0.5);
-        console.log(MatterBody.bounds);
-        super(ParentTransform,MatterBody,IsStatic);
-    }
-}
 
 class JSGameObject {
     #Root = false;
@@ -902,7 +888,7 @@ class MyPlane extends JSGameObject {
     constructor() {
         super("PlayerPlane");
         this.MoveSpeed = 1;
-        this.Collider = new JSGameTriCollider(this.transform);
+        this.Collider = new JSGameBoxCollider(this.transform);
     }
 
     Draw(JSWebCamera) {
