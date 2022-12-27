@@ -521,7 +521,7 @@ class JSGameObject {
 
         this.ParentObject = null;
         this.ChildObject = []; //Child Objects of this Object
-        this.Collider = null;
+        this.MatterCollider = null;
     }
 
     #DeleteSelfFromParent() {
@@ -541,8 +541,8 @@ class JSGameObject {
     }
 
     Update() {
-        if (this.Collider) {
-            this.Collider.Tick();
+        if (this.MatterCollider) {
+            this.MatterCollider.Tick();
         }
     }
 
@@ -553,11 +553,11 @@ class JSGameObject {
         if (!otherObject instanceof JSGameObject) {
             return;
         }
-        if (!this.Collider || !otherObject.Collider) {
+        if (!this.MatterCollider || !otherObject.Collider) {
             return;
         }
 
-        let ColEvent = this.Collider.Check(otherObject.Collider);
+        let ColEvent = this.MatterCollider.Check(otherObject.Collider);
         if (ColEvent != null) {
             console.log(`Hit! ${ColEvent.collided}`);
 
@@ -662,7 +662,6 @@ class JSGameScene extends JSGameObject {
             LayerID: 0
         });
     }
-
     Tick() {
         let Objects = this.GetAllChildObjects();
         for (let i = 0; i < Objects.length; i++) {
