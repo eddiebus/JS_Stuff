@@ -21,7 +21,7 @@ function GetVectorMagnitude(inputVector) {
     return result;
 }
 
-class TransForm {
+class Transform {
     constructor() {
         //Parent Transform
         //Is of same class
@@ -536,7 +536,7 @@ class JSWebGlCanvasTexture {
 // 2D Camera Class
 class JSWebGlOrthoCamera {
     constructor(WebGlContext) {
-        this.transform = new TransForm();
+        this.transform = new Transform();
         this.Size = [10, 10];
 
         this._parentContext = WebGlContext;
@@ -589,7 +589,7 @@ class JSWebGlOrthoCamera {
         return returnMatrix;
     }
 
-    // Update matrices (case base value changed)
+    // UpdateCollider matrices (case base value changed)
     _updateMatrix() {
         let cWidth = Math.round(this.Size[0]);
         let cHeight = Math.round(this.Size[1]);
@@ -604,7 +604,7 @@ class JSWebGlOrthoCamera {
             this.zFar
         );
 
-        let CamTransform = new TransForm();
+        let CamTransform = new Transform();
         CamTransform.Copy(this.transform);
         CamTransform.position = [-CamTransform.position[0],-CamTransform.position[1],-CamTransform.position[2]]
         this._viewMatrix = CamTransform.GetTransformMatrix();
@@ -629,7 +629,7 @@ class JSWebGlUICamera extends JSWebGlOrthoCamera{
         this.Tick()
     }
 
-    // Update matrix and size to fit canvas
+    // UpdateCollider matrix and size to fit canvas
     _updateMatrix() {
         this.Size = [
             this._parentContext._canvas.width/2,
@@ -638,7 +638,7 @@ class JSWebGlUICamera extends JSWebGlOrthoCamera{
         super._updateMatrix();
     }
 
-    // Update Size of object to fit canvas
+    // UpdateCollider Size of object to fit canvas
     Tick(){
 
         requestAnimationFrame((delta) => {
@@ -655,7 +655,7 @@ class JSWebGlMesh{
         this.Texture = new JSWebGlCanvasTexture(WebGlContext);
         this.Colour = [1,1,1,1];
         this.ExternalTexture = null;
-        this.transform = new TransForm();
+        this.transform = new Transform();
 
         this._vertexBuffer = this._parentContext._canvasContext.createBuffer();
         this._indexBuffer = this._parentContext._canvasContext.createBuffer();
@@ -736,7 +736,7 @@ class JSWebGlMesh{
         this.Colour = Colour;
     }
 
-    draw(JSWebGlCamera){
+    draw(JSWebGlCamera,Transform = new Transform()){
         if (JSWebGlCamera._parentContext != this._parentContext){
             console.warn("Can't Draw : Drawing to different Object.");
         }
@@ -764,7 +764,7 @@ class JSWebGlMesh{
             this.Shader._shaderInputLayout.attribLocations.textureCoord
         );
 
-        this.Shader.setWorldMatrix(this.transform.GetTransformMatrix());
+        this.Shader.setWorldMatrix(Transform.GetTransformMatrix());
 
         if (this.ExternalTexture) {
             this._parentContext._canvasContext.activeTexture(this._parentContext._canvasContext.TEXTURE0);
