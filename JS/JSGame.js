@@ -922,7 +922,7 @@ const GameShape = {
 
 const GameSprite ={
     Player : {
-        Ship : new JSWebGlImage("GameAsset/Sprite/TestSprite.png")
+        Ship : new JSWebGlImage("GameAsset/Sprite/TestSprite.PNG")
     }
 }
 
