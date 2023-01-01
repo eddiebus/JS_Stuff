@@ -390,13 +390,6 @@ class JSGameKeyInput {
     }
 }
 
-
-const JSGameColliderType = {
-    Box: "Box",
-    Circle: "Cirlce",
-    Triangle: "Tri"
-}
-
 class JSGameCollider {
     constructor(ParentTransform, MatterJSBody, IsStatic = true) {
         this.TransformTarget = ParentTransform;
@@ -543,7 +536,6 @@ class JSGameCircleCollider extends JSGameCollider{
 }
 
 class JSGameObject {
-    #SceneRoot = false
     //Collision Events
     #CollisionEnterObj = []
     #CollisionStayObj = []
@@ -552,7 +544,6 @@ class JSGameObject {
 
     constructor(name = "NullObject", options = {
         LayerName: "DefaultLayer",
-        Root: false,
     }) {
         this.transform = new Transform(); //Transform of object
         this.name = name; //Name Of Object
@@ -560,9 +551,6 @@ class JSGameObject {
         this.LayerName = "DefaultLayer";
         if (options.LayerName) {
             this.LayerName = options.LayerName;
-        }
-        if (options.Root) {
-            this.#SceneRoot = options.Root;
         }
 
         this.ParentObject = null;
@@ -610,7 +598,6 @@ class JSGameObject {
                 //Add to Enter or Stay
             }
         }
-        if (this.#SceneRoot == true)  { return; } //Ignore Scene Root
         let ObjectList = this.SceneList;
         for (let obj in ObjectList){
             if (this != ObjectList[obj]){
@@ -622,6 +609,17 @@ class JSGameObject {
     }
 
     Draw(JSWebGlCamera) {
+    }
+
+    FindObjectsOfType(ObjectType) {
+        let ResultArray = [];
+        let AllObjects = this.SceneList;
+        for (let i = 0; i < AllObjects.length; i++) {
+            if (AllObjects[i] instanceof ObjectType) {
+                ResultArray.push(AllObjects[i]);
+            }
+        }
+        return ResultArray;
     }
 
     GetAllChildObjects() {
@@ -649,18 +647,29 @@ class JSGameObject {
         return returnArray;
     }
 
-    FindObjectsOfType(ObjectType) {
-        let ResultArray = [];
-        let AllObjects = this.SceneList;
-        for (let i = 0; i < AllObjects.length; i++) {
-            if (AllObjects[i] instanceof ObjectType) {
-                ResultArray.push(AllObjects[i]);
-            }
+    GetRootObject(){
+        let root = this;
+        while (root.ParentObject){
+            root = root.ParentObject;
         }
-        return ResultArray;
+        return root;
     }
 
-    #DeleteSelfFromParent() {
+    #RemoveSelfFromScene(){
+        if (!this.SceneList) { return;}
+        let index = this.FindObjSceneIndex(this);
+        if (index != null){
+            this.SceneList.splice(index,1);
+            this.SetSceneList(null);
+        }
+
+        for (let obj in this.ChildObject){
+            // Remove Child Objects from scene
+            this.ChildObject[obj].#RemoveSelfFromScene();
+        }
+    }
+
+    #RemoveSelfFromParent() {
         if (this.ParentObject) {
             let ChildList = this.ParentObject.ChildObject
 
@@ -669,6 +678,8 @@ class JSGameObject {
             for (let i = 0; i < ChildList.length; i++) {
                 if (this == ChildList[i]) {
                     ChildList.splice(i, 1); // Remove Self From List
+                    this.ParentObject = null;
+                    this.transform.parentTransform = null;
                     return;
                 }
             }
@@ -676,13 +687,9 @@ class JSGameObject {
     }
 
     SetParent(otherObject) {
-        if (this.#SceneRoot) {
-            console.warn("GameObject: This Object has ForceRoot. Can't be set as child.")
+        if (otherObject != null && !otherObject instanceof  JSGameObject){
             return;
         }
-
-        this.#DeleteSelfFromParent();
-
         if (otherObject != null) {
             if (otherObject.ParentObject == this) {
                 throw "GameObject Error: This Object is already parent to other GameObject"
@@ -692,23 +699,32 @@ class JSGameObject {
 
         //Check if already exist
         if (otherObject != null) {
-            if (otherObject instanceof JSGameObject || otherObject.constructor.name == this.constructor.name) {
+            if (otherObject instanceof JSGameObject) {
                 let alreadyExist = false;
                 for (let i = 0; i < otherObject.ChildObject.length; i++) {
                     if (otherObject.ChildObject[i] == otherObject) {
                         alreadyExist = true;
+                        break;
                     }
                 }
-                // We are not already set, add self as child object
+                // Have Space
+                // Add self as child object
                 if (!alreadyExist) {
+                    this.#RemoveSelfFromParent();
+                    this.#RemoveSelfFromScene();
+
                     otherObject.ChildObject.push(this);
                     this.ParentObject = otherObject;
                     this.transform.parentTransform = otherObject.transform;
+
+                    // Put self in same scene as parent.
+                    let rootObj = this.GetRootObject();
+                    this.AddToSceneList(rootObj.SceneList);
                 }
             }
+        // Set Parent to Nothign/Null
         } else {
-            this.ParentObject = null;
-            this.transform.parentTransform = null;
+            this.#RemoveSelfFromParent();
         }
     }
 
@@ -716,7 +732,6 @@ class JSGameObject {
         if (this.SceneList == NewList){
             return;
         }
-
         else{
             NewList.push(this);
             this.SceneList = NewList;
@@ -729,17 +744,6 @@ class JSGameObject {
 
         if (this.FindObjSceneIndex(this) == null){
             this.SceneList = [];
-        }
-    }
-
-    // Check if in scene list
-    CheckInSceneList(List){
-        if (!this.SceneList){ return; }
-        if (this.SceneList == List){
-            return true;
-        }
-        else{
-            return false;
         }
     }
 
@@ -760,11 +764,7 @@ class JSGameObject {
     }
 
     Destroy(Obj){
-        let index = this.FindObjSceneIndex(Obj);
-        if (index != null){
-            this.SceneList.splice(index,1);
-            Obj.SetSceneList(null);
-        }
+        this.#RemoveSelfFromScene();
     }
 }
 
@@ -815,14 +815,15 @@ class JSGameScene extends JSGameObject {
 
     Draw(JSWebGlCamera) {
         MainWebGlContext.clear();
-        let Objects = this.GetAllChildObjects();
+        let Objects = this.SceneList;
+        Objects = this.SortObjectsByDepth(Objects);
         for (let i = 0; i < Objects.length; i++) {
             Objects[i].Draw(JSWebGlCamera);
         }
     }
 
     #CollisionCheckObjs() {
-        let Objects = this.GetAllChildObjects();
+        let Objects = this.SceneList;
         for (let i = 0; i < Objects.length; i++) {
             for (let obj = 0; obj < Objects.length; obj++) {
                 if (obj != i) {
@@ -835,7 +836,7 @@ class JSGameScene extends JSGameObject {
 
     GroupObjectsByLayer() {
         let ResultArray = []
-        let Objects = this.GetAllChildObjects();
+        let Objects = this.SceneList;
         for (let i = 0; i < Objects.length; i++) {
             let LayerMatchIndex = null;
 
@@ -913,6 +914,22 @@ let MainWebGlContext = new WebGlContext(testCanvas);
 let MainShaderContext = new JSWebGLShader(MainWebGlContext);
 let myCamera = new JSWebGlOrthoCamera(MainWebGlContext);
 
+const GameShape = {
+    Square : new JSWebGlSquare(MainWebGlContext),
+    Triangle : new JSWebGlTriangle(MainWebGlContext),
+    Circle : new JSWebGlCircle(MainWebGlContext)
+}
+
+const GameSprite ={
+    Player : {
+        Ship : new JSWebGlImage("GameAsset/Sprite/TestSprite.png")
+    }
+}
+
+GameShape.Triangle.setShader(MainShaderContext);
+GameShape.Circle.setShader(MainShaderContext);
+GameShape.Square.setShader(MainShaderContext);
+
 class PlayerPlane_Mesh extends JSWebGlTriangle {
     constructor() {
         let myImage = new JSWebGlImage(
@@ -926,13 +943,53 @@ class PlayerPlane_Mesh extends JSWebGlTriangle {
     }
 }
 
-let PlayerPlaneMesh = new PlayerPlane_Mesh();
+class HeroPlaneModel{
+    constructor() {
+    }
+
+    draw(JSWebGlCamera,TargetTransform){
+        let DrawTransform = new Transform();
+        DrawTransform.SetParent(TargetTransform);
+
+
+
+        DrawTransform.position = [0,0,0,0];
+        GameShape.Square.setColour([1,1,1,1]);
+        GameShape.Square.draw(JSWebGlCamera,DrawTransform);
+
+
+
+
+        DrawTransform.position = [0,-1,0,0];
+        DrawTransform.scale = [1,1,1,0];
+        GameShape.Circle.draw(JSWebGlCamera,DrawTransform);
+
+
+        DrawTransform.position = [1,0,0,0];
+        DrawTransform.scale = [1,1,1,0];
+        GameShape.Triangle.setColour([1,1,1,1]);
+        GameShape.Triangle.draw(JSWebGlCamera,DrawTransform);
+
+        DrawTransform.position = [-1,0,0,0];
+        DrawTransform.scale = [1,1,1,0];
+        GameShape.Triangle.setColour([1,1,1,1]);
+        GameShape.Triangle.draw(JSWebGlCamera,DrawTransform);
+
+        DrawTransform.position = [0,-1.5,0,0];
+        DrawTransform.scale = [1,-0.5,1,0];
+        GameShape.Triangle.setColour([1,1,0,1]);
+        GameShape.Triangle.draw(JSWebGlCamera,DrawTransform);
+
+    }
+}
+
+let PlayerPlaneMesh = new HeroPlaneModel();
 
 class UI_MoveJoystick extends JSGameObject {
     constructor() {
         super("UI_Joystick", {LayerName: "UI"});
         this.OuterCircle = new JSWebGlCircle(MainWebGlContext, MainShaderContext, [0, 0, 0, 0.1]);
-        this.ThumbCirlce = new JSWebGlSquare(MainWebGlContext, MainShaderContext, [1, 1, 1, 1]);
+        this.ThumbCirlce = new JSWebGlCircle(MainWebGlContext, MainShaderContext, [0, 0, 0, 0.3]);
 
         this.OuterCircle.transform.SetParent(this.transform);
         this.ThumbCirlce.transform.SetParent(this.transform);
@@ -1040,13 +1097,13 @@ class SpinBox extends JSGameObject {
 }
 
 class TestBullet extends JSGameObject {
-    constructor(startPos = [0,0]) {
+    constructor(startPos = [0,0,0]) {
         super("SpinBox");
         this.Collider = new JSGameBoxCollider(this.transform);
 
-        this.Mesh = new JSWebGlSquare(MainWebGlContext, MainShaderContext, [1, 1, 1, 1]);
         this.transform.position[0] = startPos[0];
         this.transform.position[1] = startPos[1];
+        this.transform.position[2] = startPos[2];
 
         this.TimeAlive = 0;
     }
@@ -1054,7 +1111,7 @@ class TestBullet extends JSGameObject {
     Tick(DeltaTime) {
         this.transform.position[2] = [-10];
         this.transform.position[1] += Time.deltaTime * 1.5;
-        this.transform.scale = [45, 45, 1];
+        this.transform.scale = [20, 20, 1];
         this.transform.rotation[2] = 0;
 
         this.TimeAlive += Time.deltaTime;
@@ -1064,7 +1121,9 @@ class TestBullet extends JSGameObject {
     }
 
     Draw(JSWebGlCamera) {
-        this.Mesh.draw(JSWebGlCamera,this.transform);
+        GameShape.Square.setColour([0,1,1,1]);
+        GameShape.Square.Texture.clear([1,1,1,1]);
+        GameShape.Square.draw(JSWebGlCamera,this.transform);
     }
 
 }
@@ -1076,15 +1135,20 @@ class MyPlane extends JSGameObject {
         this.SetCollisionBody(new JSGameBoxCollider(this.transform));
 
         this.Shot = {
-            Delay: 200,
+            Delay: 150,
             Time: 0
         }
     }
     Draw(JSWebCamera) {
-        PlayerPlaneMesh.draw(JSWebCamera,this.transform);
+        GameShape.Square.setColour([1,1,1,1]);
+        GameShape.Square.Texture.setAsImage(GameSprite.Player.Ship);
+        GameShape.Square.draw(JSWebCamera,this.transform);
+
+        this.transform.scale = [30, 30, 1]
     }
 
     Tick(DeltaTime) {
+        if (!MainWebGlContext.isFullscreen) { return; }
 
         this.Shot.Time -= Time.deltaTime;
         if (this.Shot.Time < 0){
@@ -1106,18 +1170,19 @@ class MyPlane extends JSGameObject {
             this.transform.position[1] += JoyStick.MoveY * DeltaTime / 2 * this.MoveSpeed;
         }
 
-        if (TouchInput.touch[1].isPressed){
+        if (TouchInput.touch[0].isPressed){
             if (this.Shot.Time <= 0) {
                 let newBullet = new TestBullet([
                     this.transform.position[0],
-                    this.transform.position[1]
+                    this.transform.position[1] + this.transform.scale[1]*2,
+                    this.transform.position[2] + 100
                 ]);
                 this.Spawn(newBullet);
                 this.Shot.Time = this.Shot.Delay;
             }
         }
         this.transform.position[2] = -10;
-        this.transform.scale = [100, 100, 1];
+        this.transform.scale = [30, 30, 1];
     }
 }
 
@@ -1128,9 +1193,7 @@ class TestScene extends JSGameScene {
     constructor() {
         super();
         this.Camera = new JSWebGlUICamera(MainWebGlContext);
-        new MyPlane().SetParent(this);
-        new UI_MoveJoystick().SetParent(this);
-        new SpinBox().SetParent(this);
+
 
 
         //this.Add(new SpinBox());
@@ -1146,7 +1209,6 @@ class TestScene extends JSGameScene {
     }
 
     Draw(JSWebGlCamera = this.Camera) {
-        MainWebGlContext.clear([0, 1, 0, 1]);
         for (let object of this.SortObjectsByDepth(this.Camera)) {
             object.Draw(JSWebGlCamera);
         }
@@ -1160,6 +1222,7 @@ function loop() {
     myCamera.transform.position = [0, 0, 20];
 
     MyTestScene.Tick();
+    MainWebGlContext.clear([1, 1, 1, 1]);
     MyTestScene.Draw();
 
     window.requestAnimationFrame(() => {

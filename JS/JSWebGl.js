@@ -231,7 +231,7 @@ class WebGlContext {
         );
 
         this._canvasContext.enable(this._canvasContext.DEPTH_TEST);
-        this._canvasContext.depthFunc(this._canvasContext.LESS);
+        this._canvasContext.depthFunc(this._canvasContext.LEQUAL);
         this._canvasContext.disable(this._canvasContext.CULL_FACE);
 
 
@@ -741,6 +741,7 @@ class JSWebGlMesh{
             console.warn("Can't Draw : Drawing to different Object.");
         }
         if (!this.Shader){
+            console.warn("Tried to draw mesh without shader.Make sure shader is set.")
             return;
         }
         this.Shader.use();
@@ -815,7 +816,7 @@ class JSWebGlTriangle extends  JSWebGlMesh{
         this._setVertexBuffer(vertices);
         this._setTextureCoords(textureCoord);
 
-        this.Texture.clear(colour);
+        this.Texture.clear([1,1,1,1]);
     }
 }
 
@@ -910,7 +911,7 @@ class JSWebGlSquare extends JSWebGlMesh {
         this._setVertexBuffer(vertices);
         this._setIndexBuffer(indices);
         this._setTextureCoords(textureCoord);
-        this.Texture.clear(this.Colour);
+        this.Texture.clear([1,1,1,1]);
 
         this.RenderMethod = this._parentContext._canvasContext.TRIANGLES;
     }
