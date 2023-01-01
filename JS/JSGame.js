@@ -543,11 +543,12 @@ class JSGameCircleCollider extends JSGameCollider{
 }
 
 class JSGameObject {
-    #SceneRoot = false;
+    #SceneRoot = false
     //Collision Events
     #CollisionEnterObj = []
     #CollisionStayObj = []
     #CollisionExitObj = []
+    #SceneList = null;
 
     constructor(name = "NullObject", options = {
         LayerName: "DefaultLayer",
@@ -568,10 +569,10 @@ class JSGameObject {
         this.ChildObject = []; //Child Objects of this Object
         this.Collider = null;
         this.LayerCollideIgnore = [] //Layers to Ignore Collision
+        this.#SceneList = null;
 
         this.#GenerateCollisionEvents();
     }
-
 
     Tick(DeltaTime) {
     }
@@ -599,7 +600,7 @@ class JSGameObject {
 
         let ColEvent = this.Collider.Check(otherObject.Collider);
         if (ColEvent != null) {
-            console.log(`Hit! ${ColEvent.collided}`);
+            //console.log(`Hit! ${ColEvent.collided}`);
         }
     }
 
@@ -610,7 +611,7 @@ class JSGameObject {
             }
         }
         if (this.#SceneRoot == true)  { return; } //Ignore Scene Root
-        let ObjectList = this.GetAllSceneObjects();
+        let ObjectList = this.SceneList;
         for (let obj in ObjectList){
             if (this != ObjectList[obj]){
                 this.CollisionCheck(ObjectList[obj]);
@@ -648,23 +649,9 @@ class JSGameObject {
         return returnArray;
     }
 
-    GetRootObject() {
-        let RootObject = this;
-        while (RootObject.ParentObject) {
-            RootObject = RootObject.ParentObject
-        }
-        return RootObject;
-    }
-
-    GetAllSceneObjects(){
-        let root = this.GetRootObject();
-        return root.GetAllChildObjects();
-    }
-
     FindObjectsOfType(ObjectType) {
         let ResultArray = [];
-        let RootObject = this.GetRootObject();
-        let AllObjects = this.GetAllSceneObjects();
+        let AllObjects = this.SceneList;
         for (let i = 0; i < AllObjects.length; i++) {
             if (AllObjects[i] instanceof ObjectType) {
                 ResultArray.push(AllObjects[i]);
@@ -711,9 +698,7 @@ class JSGameObject {
                     if (otherObject.ChildObject[i] == otherObject) {
                         alreadyExist = true;
                     }
-
                 }
-
                 // We are not already set, add self as child object
                 if (!alreadyExist) {
                     otherObject.ChildObject.push(this);
@@ -726,6 +711,61 @@ class JSGameObject {
             this.transform.parentTransform = null;
         }
     }
+
+    AddToSceneList(NewList){
+        if (this.SceneList == NewList){
+            return;
+        }
+
+        else{
+            NewList.push(this);
+            this.SceneList = NewList;
+        }
+    }
+
+    // Set The Scene List
+    SetSceneList(newList){
+        this.SceneList = newList;
+
+        if (this.FindObjSceneIndex(this) == null){
+            this.SceneList = [];
+        }
+    }
+
+    // Check if in scene list
+    CheckInSceneList(List){
+        if (!this.SceneList){ return; }
+        if (this.SceneList == List){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    // Find Object in Scene List
+    // Returns Index Pos
+    FindObjSceneIndex(TargetObj){
+        if (!this.SceneList){ return; }
+        for (let i = 0; i < this.SceneList.length; i++) {
+            if (this.SceneList[i] == TargetObj){
+                return i;
+            }
+        }
+        return null;
+    }
+
+    Spawn(NewObj){
+        NewObj.AddToSceneList(this.SceneList);
+    }
+
+    Destroy(Obj){
+        let index = this.FindObjSceneIndex(Obj);
+        if (index != null){
+            this.SceneList.splice(index,1);
+            Obj.SetSceneList(null);
+        }
+    }
 }
 
 class JSGameScene extends JSGameObject {
@@ -734,9 +774,38 @@ class JSGameScene extends JSGameObject {
             Root: true,
             LayerID: 0
         });
+
+        this.SceneList = []
     }
+
+    Add(GameObj){
+        //Check if object already exists in scene
+        function SearchForObj(target,List){
+
+            for (let i = 0; i < List.length;i++){
+                if (List[i] == target){
+                    return i;
+                }
+            }
+
+            return null;
+        }
+        if (GameObj instanceof JSGameObject ){
+            GameObj.AddToSceneList(this.SceneList);
+        }
+    }
+
+    #SearchObjInScene(obj) {
+        for (let i = 0; i < this.SceneList.length; i++){
+            if (this.SceneList[i] == obj){
+                return i;
+            }
+        }
+        return null;
+    }
+
     Tick() {
-        let Objects = this.GetAllChildObjects();
+        let Objects = this.SceneList;
         for (let i = 0; i < Objects.length; i++) {
             Objects[i].Tick(Time.deltaTime);
         }
@@ -794,7 +863,7 @@ class JSGameScene extends JSGameObject {
         return ResultArray;
     }
 
-    SortObjectsByDepth(JSWebGlCamera, ObjectList = this.ChildObject) {
+    SortObjectsByDepth(JSWebGlCamera, ObjectList = this.SceneList) {
         if (!JSWebGlCamera) {
             console.warn("GameObject: SortObjectByDepth, no camera given");
             return [];
@@ -844,7 +913,7 @@ let MainWebGlContext = new WebGlContext(testCanvas);
 let MainShaderContext = new JSWebGLShader(MainWebGlContext);
 let myCamera = new JSWebGlOrthoCamera(MainWebGlContext);
 
-class PlayerPlane_Mesh extends JSWebGlSquare {
+class PlayerPlane_Mesh extends JSWebGlTriangle {
     constructor() {
         let myImage = new JSWebGlImage(
             "https://is3-ssl.mzstatic.com/image/thumb/Purple111/v4/cd/7f/f0/cd7ff0df-cb1f-8d10-6c4a-9cde28f2c5a5/source/256x256bb.jpg"
@@ -970,20 +1039,57 @@ class SpinBox extends JSGameObject {
 
 }
 
+class TestBullet extends JSGameObject {
+    constructor(startPos = [0,0]) {
+        super("SpinBox");
+        this.Collider = new JSGameBoxCollider(this.transform);
+
+        this.Mesh = new JSWebGlSquare(MainWebGlContext, MainShaderContext, [1, 1, 1, 1]);
+        this.transform.position[0] = startPos[0];
+        this.transform.position[1] = startPos[1];
+
+        this.TimeAlive = 0;
+    }
+
+    Tick(DeltaTime) {
+        this.transform.position[2] = [-10];
+        this.transform.position[1] += Time.deltaTime * 1.5;
+        this.transform.scale = [45, 45, 1];
+        this.transform.rotation[2] = 0;
+
+        this.TimeAlive += Time.deltaTime;
+        if (this.TimeAlive > 2000){
+            this.Destroy(this);
+        }
+    }
+
+    Draw(JSWebGlCamera) {
+        this.Mesh.draw(JSWebGlCamera,this.transform);
+    }
+
+}
+
 class MyPlane extends JSGameObject {
     constructor() {
         super("PlayerPlane");
         this.MoveSpeed = 1;
         this.SetCollisionBody(new JSGameBoxCollider(this.transform));
+
+        this.Shot = {
+            Delay: 200,
+            Time: 0
+        }
     }
     Draw(JSWebCamera) {
-        if (!MainWebGlContext.isFullscreen) {
-            return;
-        }
         PlayerPlaneMesh.draw(JSWebCamera,this.transform);
     }
 
     Tick(DeltaTime) {
+
+        this.Shot.Time -= Time.deltaTime;
+        if (this.Shot.Time < 0){
+            this.Shot.Time = 0;
+        }
 
         if (TouchInput.touch[0].isPressed) {
             let touchObj = TouchInput.touch[0];
@@ -998,6 +1104,17 @@ class MyPlane extends JSGameObject {
 
             this.transform.position[0] += JoyStick.MoveX * DeltaTime / 2 * this.MoveSpeed;
             this.transform.position[1] += JoyStick.MoveY * DeltaTime / 2 * this.MoveSpeed;
+        }
+
+        if (TouchInput.touch[1].isPressed){
+            if (this.Shot.Time <= 0) {
+                let newBullet = new TestBullet([
+                    this.transform.position[0],
+                    this.transform.position[1]
+                ]);
+                this.Spawn(newBullet);
+                this.Shot.Time = this.Shot.Delay;
+            }
         }
         this.transform.position[2] = -10;
         this.transform.scale = [100, 100, 1];
@@ -1014,10 +1131,17 @@ class TestScene extends JSGameScene {
         new MyPlane().SetParent(this);
         new UI_MoveJoystick().SetParent(this);
         new SpinBox().SetParent(this);
+
+
+        //this.Add(new SpinBox());
+        this.Add(new MyPlane());
+        this.Add(new UI_MoveJoystick());
     }
 
     Tick() {
         super.Tick();
+        console.log(`Object Count = ${this.SceneList.length}\n`);
+        console.log(`FPS  = ${1000 / Time.deltaTime}\n`);
         this.Camera.transform.position = [0, 0, 10];
     }
 
