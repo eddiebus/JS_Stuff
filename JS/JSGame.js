@@ -1170,7 +1170,7 @@ class MyPlane extends JSGameObject {
             this.transform.position[1] += JoyStick.MoveY * DeltaTime / 2 * this.MoveSpeed;
         }
 
-        if (TouchInput.touch[0].isPressed){
+        if (TouchInput.touch[1].isPressed){
             if (this.Shot.Time <= 0) {
                 let newBullet = new TestBullet([
                     this.transform.position[0],
@@ -1216,6 +1216,7 @@ class TestScene extends JSGameScene {
 }
 
 let MyTestScene = new TestScene();
+
 
 function loop() {
     myCamera.Size = [testCanvas.width, testCanvas.height];
